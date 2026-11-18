@@ -1,0 +1,132 @@
+{
+ "autoname": "field:amenity_name",
+ "creation": "2026-11-17 12:00:00.000000",
+ "custom": 0,
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "amenity_name",
+  "amenity_code",
+  "category",
+  "column_break_1",
+  "applies_to",
+  "icon_name",
+  "is_active",
+  "section_break_desc",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "amenity_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Amenity Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "Stable identifier for APIs, e.g. FREE_WIFI",
+   "fieldname": "amenity_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Amenity Code",
+   "unique": 1
+  },
+  {
+   "default": "General",
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Category",
+   "options": "General\nBathroom\nBedroom\nFood and Dining\nTechnology\nEntertainment\nSafety\nAccessibility\nOutdoor\nOther"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Room and Property",
+   "fieldname": "applies_to",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Applies To",
+   "options": "Room and Property\nRoom\nProperty"
+  },
+  {
+   "description": "Frontend icon identifier, e.g. wifi",
+   "fieldname": "icon_name",
+   "fieldtype": "Data",
+   "label": "Icon Name"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "section_break_desc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "istable": 0,
+ "modified": "2026-11-17 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Hotel Amenity",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality User",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "amenity_code,category",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "amenity_name"
+}

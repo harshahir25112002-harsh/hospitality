@@ -1,0 +1,393 @@
+{
+ "actions": [],
+ "creation": "2026-11-05 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "default_room_item",
+  "guest_customer_group",
+  "guest_territory",
+  "sales_taxes_template",
+  "cost_center",
+  "column_break_settings",
+  "status_after_maintenance",
+  "allow_checkin_before_arrival",
+  "require_guest_id_at_checkin",
+  "block_checkout_if_balance",
+  "balance_tolerance",
+  "min_billable_nights",
+  "section_pos",
+  "restaurant_pos_profile",
+  "room_pos_profile",
+  "column_break_pos",
+  "default_advance_mode",
+  "update_stock_on_checkout",
+  "console_refresh_seconds",
+  "tab_property_profile",
+  "hotel_name",
+  "property_short_description",
+  "property_description",
+  "column_break_profile",
+  "hotel_logo",
+  "cover_image",
+  "star_rating",
+  "section_contact",
+  "contact_number",
+  "email_address",
+  "column_break_contact",
+  "website",
+  "section_address",
+  "address_line",
+  "city",
+  "state",
+  "country",
+  "postal_code",
+  "column_break_address",
+  "latitude",
+  "longitude",
+  "google_maps_url",
+  "section_property_images",
+  "property_images",
+  "section_property_amenities",
+  "property_amenities",
+  "section_publishing",
+  "is_active",
+  "is_published",
+  "column_break_publishing",
+  "website_slug",
+  "featured_property"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "default_room_item",
+   "fieldtype": "Link",
+   "label": "Default Room Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "guest_customer_group",
+   "fieldtype": "Link",
+   "label": "Guest Customer Group",
+   "options": "Customer Group"
+  },
+  {
+   "fieldname": "guest_territory",
+   "fieldtype": "Link",
+   "label": "Guest Territory",
+   "options": "Territory"
+  },
+  {
+   "fieldname": "sales_taxes_template",
+   "fieldtype": "Link",
+   "label": "Sales Taxes and Charges Template",
+   "options": "Sales Taxes and Charges Template"
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "column_break_settings",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Available",
+   "fieldname": "status_after_maintenance",
+   "fieldtype": "Select",
+   "label": "Status After Maintenance",
+   "options": "Available\nDirty"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_checkin_before_arrival",
+   "fieldtype": "Check",
+   "label": "Allow Check-in Before Arrival Date"
+  },
+  {
+   "fieldname": "require_guest_id_at_checkin",
+   "fieldtype": "Check",
+   "default": "1",
+   "label": "Require Guest ID at Check-in"
+  },
+  {
+   "default": "1",
+   "fieldname": "block_checkout_if_balance",
+   "fieldtype": "Check",
+   "label": "Block Check-out if Balance Remaining"
+  },
+  {
+   "default": "0",
+   "fieldname": "balance_tolerance",
+   "fieldtype": "Currency",
+   "label": "Balance Tolerance"
+  },
+  {
+   "default": "1",
+   "fieldname": "min_billable_nights",
+   "fieldtype": "Int",
+   "label": "Minimum Billable Nights"
+  },
+  {
+   "fieldname": "section_pos",
+   "fieldtype": "Section Break",
+   "label": "POS & Console Configuration"
+  },
+  {
+   "fieldname": "restaurant_pos_profile",
+   "fieldtype": "Link",
+   "label": "Restaurant POS Profile",
+   "options": "POS Profile"
+  },
+  {
+   "fieldname": "room_pos_profile",
+   "fieldtype": "Link",
+   "label": "Room POS Profile",
+   "options": "POS Profile"
+  },
+  {
+   "fieldname": "column_break_pos",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_advance_mode",
+   "fieldtype": "Link",
+   "label": "Default Advance Mode of Payment",
+   "options": "Mode of Payment"
+  },
+  {
+   "default": "0",
+   "fieldname": "update_stock_on_checkout",
+   "fieldtype": "Check",
+   "label": "Update Stock on Checkout"
+  },
+  {
+   "default": "60",
+   "fieldname": "console_refresh_seconds",
+   "fieldtype": "Int",
+   "label": "Console Refresh Interval (Seconds)"
+  },
+  {
+   "fieldname": "tab_property_profile",
+   "fieldtype": "Tab Break",
+   "label": "Property Profile"
+  },
+  {
+   "fieldname": "hotel_name",
+   "fieldtype": "Data",
+   "label": "Hotel Name"
+  },
+  {
+   "fieldname": "property_short_description",
+   "fieldtype": "Small Text",
+   "label": "Short Description"
+  },
+  {
+   "fieldname": "property_description",
+   "fieldtype": "Text Editor",
+   "label": "Detailed Description"
+  },
+  {
+   "fieldname": "column_break_profile",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hotel_logo",
+   "fieldtype": "Attach Image",
+   "label": "Hotel Logo"
+  },
+  {
+   "fieldname": "cover_image",
+   "fieldtype": "Attach Image",
+   "label": "Main Cover Image"
+  },
+  {
+   "fieldname": "star_rating",
+   "fieldtype": "Select",
+   "label": "Star Rating",
+   "options": "\n1\n2\n3\n4\n5"
+  },
+  {
+   "fieldname": "section_contact",
+   "fieldtype": "Section Break",
+   "label": "Contact"
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Data",
+   "label": "Contact Number",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "email_address",
+   "fieldtype": "Data",
+   "label": "Email Address",
+   "options": "Email"
+  },
+  {
+   "fieldname": "column_break_contact",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "website",
+   "fieldtype": "Data",
+   "label": "Website",
+   "options": "URL"
+  },
+  {
+   "fieldname": "section_address",
+   "fieldtype": "Section Break",
+   "label": "Address & Location"
+  },
+  {
+   "fieldname": "address_line",
+   "fieldtype": "Small Text",
+   "label": "Address Line"
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "label": "City"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "postal_code",
+   "fieldtype": "Data",
+   "label": "Postal Code"
+  },
+  {
+   "fieldname": "column_break_address",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "7"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "7"
+  },
+  {
+   "fieldname": "google_maps_url",
+   "fieldtype": "Data",
+   "label": "Google Maps URL",
+   "options": "URL"
+  },
+  {
+   "fieldname": "section_property_images",
+   "fieldtype": "Section Break",
+   "label": "Property Photographs"
+  },
+  {
+   "fieldname": "property_images",
+   "fieldtype": "Table",
+   "label": "Property Images",
+   "options": "Hotel Property Image"
+  },
+  {
+   "fieldname": "section_property_amenities",
+   "fieldtype": "Section Break",
+   "label": "Hotel Amenities"
+  },
+  {
+   "fieldname": "property_amenities",
+   "fieldtype": "Table",
+   "label": "Property Amenities",
+   "options": "Hotel Property Amenity"
+  },
+  {
+   "fieldname": "section_publishing",
+   "fieldtype": "Section Break",
+   "label": "Publishing"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_published",
+   "fieldtype": "Check",
+   "label": "Is Published"
+  },
+  {
+   "fieldname": "column_break_publishing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Lowercase letters, digits and hyphens. Generated from Hotel Name if empty.",
+   "fieldname": "website_slug",
+   "fieldtype": "Data",
+   "label": "Website Slug"
+  },
+  {
+   "default": "0",
+   "fieldname": "featured_property",
+   "fieldtype": "Check",
+   "label": "Featured Property"
+  }
+ ],
+ "issingle": 1,
+ "link_display_mode": "Search",
+ "links": [],
+ "modified": "2026-11-17 14:01:44.099618",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Hotel Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Hospitality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Hospitality User"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

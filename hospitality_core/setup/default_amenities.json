@@ -1,0 +1,170 @@
+[
+ {
+  "amenity_name": "Free Wi-Fi",
+  "amenity_code": "FREE_WIFI",
+  "category": "Technology",
+  "icon_name": "wifi",
+  "applies_to": "Room and Property"
+ },
+ {
+  "amenity_name": "Air Conditioning",
+  "amenity_code": "AIR_CONDITIONING",
+  "category": "Bedroom",
+  "icon_name": "air-vent",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Television",
+  "amenity_code": "TELEVISION",
+  "category": "Entertainment",
+  "icon_name": "tv",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Refrigerator",
+  "amenity_code": "REFRIGERATOR",
+  "category": "Food and Dining",
+  "icon_name": "refrigerator",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Tea/Coffee Maker",
+  "amenity_code": "TEA_COFFEE_MAKER",
+  "category": "Food and Dining",
+  "icon_name": "coffee",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Attached Bathroom",
+  "amenity_code": "ATTACHED_BATHROOM",
+  "category": "Bathroom",
+  "icon_name": "bath",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Hot Water",
+  "amenity_code": "HOT_WATER",
+  "category": "Bathroom",
+  "icon_name": "droplet",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Hair Dryer",
+  "amenity_code": "HAIR_DRYER",
+  "category": "Bathroom",
+  "icon_name": "wind",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Wardrobe",
+  "amenity_code": "WARDROBE",
+  "category": "Bedroom",
+  "icon_name": "shirt",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Work Desk",
+  "amenity_code": "WORK_DESK",
+  "category": "Bedroom",
+  "icon_name": "lamp-desk",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Balcony",
+  "amenity_code": "BALCONY",
+  "category": "Outdoor",
+  "icon_name": "fence",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Room Service",
+  "amenity_code": "ROOM_SERVICE",
+  "category": "Food and Dining",
+  "icon_name": "concierge-bell",
+  "applies_to": "Room and Property"
+ },
+ {
+  "amenity_name": "Telephone",
+  "amenity_code": "TELEPHONE",
+  "category": "Technology",
+  "icon_name": "phone",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Safe Locker",
+  "amenity_code": "SAFE_LOCKER",
+  "category": "Safety",
+  "icon_name": "lock",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Iron",
+  "amenity_code": "IRON",
+  "category": "General",
+  "icon_name": "shirt",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Electric Kettle",
+  "amenity_code": "ELECTRIC_KETTLE",
+  "category": "Food and Dining",
+  "icon_name": "cup-soda",
+  "applies_to": "Room"
+ },
+ {
+  "amenity_name": "Swimming Pool",
+  "amenity_code": "SWIMMING_POOL",
+  "category": "Outdoor",
+  "icon_name": "waves",
+  "applies_to": "Property"
+ },
+ {
+  "amenity_name": "Restaurant",
+  "amenity_code": "RESTAURANT",
+  "category": "Food and Dining",
+  "icon_name": "utensils",
+  "applies_to": "Property"
+ },
+ {
+  "amenity_name": "Parking",
+  "amenity_code": "PARKING",
+  "category": "General",
+  "icon_name": "car",
+  "applies_to": "Property"
+ },
+ {
+  "amenity_name": "Gym",
+  "amenity_code": "GYM",
+  "category": "General",
+  "icon_name": "dumbbell",
+  "applies_to": "Property"
+ },
+ {
+  "amenity_name": "Spa",
+  "amenity_code": "SPA",
+  "category": "General",
+  "icon_name": "flower",
+  "applies_to": "Property"
+ },
+ {
+  "amenity_name": "Conference Room",
+  "amenity_code": "CONFERENCE_ROOM",
+  "category": "General",
+  "icon_name": "presentation",
+  "applies_to": "Property"
+ },
+ {
+  "amenity_name": "Airport Transfer",
+  "amenity_code": "AIRPORT_TRANSFER",
+  "category": "General",
+  "icon_name": "plane",
+  "applies_to": "Property"
+ },
+ {
+  "amenity_name": "Laundry",
+  "amenity_code": "LAUNDRY",
+  "category": "General",
+  "icon_name": "washing-machine",
+  "applies_to": "Property"
+ }
+]

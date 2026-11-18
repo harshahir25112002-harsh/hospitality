@@ -1,0 +1,240 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:plan_name",
+ "creation": "2025-01-28 10:45:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_name",
+  "room_type",
+  "rate",
+  "column_break_1",
+  "valid_from",
+  "valid_to",
+  "active",
+  "section_meal_cancellation",
+  "meal_plan",
+  "is_refundable",
+  "free_cancellation",
+  "free_cancellation_hours",
+  "column_break_cancel",
+  "cancellation_policy",
+  "rate_plan_description",
+  "section_charges",
+  "extra_adult_charge",
+  "extra_child_charge",
+  "extra_bed_charge",
+  "included_adults",
+  "included_children",
+  "column_break_charges",
+  "rate_includes_tax",
+  "taxes_and_charges",
+  "discount_percentage",
+  "section_break_target",
+  "customer_group",
+  "customer"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "label": "Plan Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "room_type",
+   "fieldtype": "Link",
+   "label": "Room Type",
+   "options": "Hotel Room Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Rate (Per Night)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From",
+   "reqd": 1
+  },
+  {
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "label": "Valid To",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "fieldname": "section_meal_cancellation",
+   "fieldtype": "Section Break",
+   "label": "Meal Plan & Cancellation"
+  },
+  {
+   "default": "Room Only",
+   "fieldname": "meal_plan",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Meal Plan",
+   "options": "Room Only\nBreakfast Included\nBreakfast + Lunch\nBreakfast + Dinner\nFull Board"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_refundable",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Is Refundable"
+  },
+  {
+   "default": "0",
+   "depends_on": "is_refundable",
+   "fieldname": "free_cancellation",
+   "fieldtype": "Check",
+   "label": "Free Cancellation"
+  },
+  {
+   "depends_on": "free_cancellation",
+   "fieldname": "free_cancellation_hours",
+   "fieldtype": "Int",
+   "label": "Free Cancellation Until (Hours Before Check-in)"
+  },
+  {
+   "fieldname": "column_break_cancel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cancellation_policy",
+   "fieldtype": "Small Text",
+   "label": "Cancellation Policy"
+  },
+  {
+   "fieldname": "rate_plan_description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "description": "Stored for booking channels; existing reservation pricing uses the nightly Rate only.",
+   "fieldname": "section_charges",
+   "fieldtype": "Section Break",
+   "label": "Additional Charges, Tax & Discount"
+  },
+  {
+   "fieldname": "extra_adult_charge",
+   "fieldtype": "Currency",
+   "label": "Extra Adult Charge (per night)"
+  },
+  {
+   "fieldname": "extra_child_charge",
+   "fieldtype": "Currency",
+   "label": "Extra Child Charge (per night)"
+  },
+  {
+   "fieldname": "extra_bed_charge",
+   "fieldtype": "Currency",
+   "label": "Extra Bed Charge (per night)"
+  },
+  {
+   "description": "Extra Adult Charge applies per adult above this number per room. 0 = no extra adult charge.",
+   "fieldname": "included_adults",
+   "fieldtype": "Int",
+   "label": "Adults Included in Rate"
+  },
+  {
+   "description": "Extra Child Charge applies per child above this number per room. 0 = no extra child charge.",
+   "fieldname": "included_children",
+   "fieldtype": "Int",
+   "label": "Children Included in Rate"
+  },
+  {
+   "fieldname": "column_break_charges",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "rate_includes_tax",
+   "fieldtype": "Check",
+   "label": "Rate Includes Tax"
+  },
+  {
+   "fieldname": "taxes_and_charges",
+   "fieldtype": "Link",
+   "label": "Sales Taxes Template",
+   "options": "Sales Taxes and Charges Template"
+  },
+  {
+   "fieldname": "discount_percentage",
+   "fieldtype": "Percent",
+   "label": "Discount (%)"
+  },
+  {
+   "fieldname": "section_break_target",
+   "fieldtype": "Section Break",
+   "label": "Applicability"
+  },
+  {
+   "fieldname": "customer_group",
+   "fieldtype": "Link",
+   "label": "Customer Group",
+   "options": "Customer Group"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-17 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Room Rate Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Hospitality User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

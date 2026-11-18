@@ -1,0 +1,403 @@
+{
+ "actions": [],
+ "autoname": "HPT-.YYYY.-.#####",
+ "creation": "2026-11-17 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sb_main",
+  "status",
+  "scenario",
+  "source",
+  "environment",
+  "cb_main",
+  "amount",
+  "currency",
+  "captured_amount",
+  "refunded_amount",
+  "sb_links",
+  "hotel_reservation",
+  "customer",
+  "customer_name",
+  "cb_links",
+  "sales_invoice",
+  "payment_entry",
+  "company",
+  "sb_gateway",
+  "razorpay_order_id",
+  "razorpay_payment_id",
+  "razorpay_signature",
+  "payment_method",
+  "cb_gateway",
+  "gateway_reference",
+  "failure_reason",
+  "idempotency_key",
+  "description",
+  "sb_times",
+  "created_at",
+  "verified_at",
+  "captured_at",
+  "cb_times",
+  "reconciled_at",
+  "expires_on",
+  "hold_expires_on",
+  "requested_by",
+  "sb_refunds",
+  "refunds",
+  "sb_internal",
+  "access_token_hash",
+  "needs_review",
+  "review_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "sb_main",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "Initiated",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Transaction Status",
+   "options": "Initiated\nOrder Created\nPayment Pending\nAuthorized\nCaptured\nFailed\nCancelled\nExpired\nRefund Pending\nPartially Refunded\nRefunded\nReconciliation Pending\nReconciled",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "scenario",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Scenario",
+   "options": "Reservation Advance\nFront Desk\nSales Invoice\nGateway Test",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Website\nFront Desk\nDesk",
+   "read_only": 1
+  },
+  {
+   "fieldname": "environment",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Payment Environment",
+   "options": "Test\nLive",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "captured_amount",
+   "fieldtype": "Currency",
+   "label": "Captured Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "refunded_amount",
+   "fieldtype": "Currency",
+   "label": "Refunded Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_links",
+   "fieldtype": "Section Break",
+   "label": "References"
+  },
+  {
+   "fieldname": "hotel_reservation",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Hotel Reservation",
+   "options": "Hotel Reservation",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_links",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "payment_entry",
+   "fieldtype": "Link",
+   "label": "Payment Entry",
+   "no_copy": 1,
+   "options": "Payment Entry",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_gateway",
+   "fieldtype": "Section Break",
+   "label": "Gateway"
+  },
+  {
+   "fieldname": "razorpay_order_id",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Razorpay Order ID",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "razorpay_payment_id",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Razorpay Payment ID",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "razorpay_signature",
+   "fieldtype": "Data",
+   "label": "Razorpay Signature",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_method",
+   "fieldtype": "Data",
+   "label": "Payment Method",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_gateway",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Bank RRN / acquirer reference",
+   "fieldname": "gateway_reference",
+   "fieldtype": "Data",
+   "label": "Gateway Response Reference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "failure_reason",
+   "fieldtype": "Small Text",
+   "label": "Failure Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_times",
+   "fieldtype": "Section Break",
+   "label": "Timeline"
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verified_at",
+   "fieldtype": "Datetime",
+   "label": "Verified At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "captured_at",
+   "fieldtype": "Datetime",
+   "label": "Captured At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_times",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reconciled_at",
+   "fieldtype": "Datetime",
+   "label": "Reconciled At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Datetime",
+   "label": "Payment Link Expires On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hold_expires_on",
+   "fieldtype": "Datetime",
+   "label": "Unpaid Hold Expires On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_refunds",
+   "fieldtype": "Section Break",
+   "label": "Refunds"
+  },
+  {
+   "fieldname": "refunds",
+   "fieldtype": "Table",
+   "label": "Refunds",
+   "options": "Hotel Payment Refund",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_internal",
+   "fieldtype": "Section Break",
+   "label": "Internal"
+  },
+  {
+   "fieldname": "access_token_hash",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Access Token Hash",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "needs_review",
+   "fieldtype": "Check",
+   "label": "Needs Review",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_note",
+   "fieldtype": "Small Text",
+   "label": "Review Note",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "links": [],
+ "modified": "2026-11-17 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Hotel Payment Transaction",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 0
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager"
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality Manager"
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality User"
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "customer_name,hotel_reservation,razorpay_payment_id",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}

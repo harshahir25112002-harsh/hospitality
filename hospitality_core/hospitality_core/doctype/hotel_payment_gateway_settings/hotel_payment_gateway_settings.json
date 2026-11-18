@@ -1,0 +1,332 @@
+{
+ "actions": [],
+ "creation": "2026-11-17 12:00:00.000000",
+ "description": "Razorpay payment gateway configuration for Hospitality Core",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "gateway_dashboard",
+  "sb_gateway",
+  "enabled",
+  "gateway_name",
+  "cb_gateway",
+  "environment",
+  "sb_credentials",
+  "test_key_id",
+  "test_key_secret",
+  "cb_credentials",
+  "test_webhook_secret",
+  "sb_accounting",
+  "company",
+  "default_currency",
+  "mode_of_payment",
+  "cb_accounting",
+  "clearing_account",
+  "receivable_account",
+  "sb_scenarios",
+  "allow_website_advance",
+  "allow_front_desk",
+  "allow_invoice_payment",
+  "allow_partial_invoice_payment",
+  "cb_scenarios",
+  "default_description",
+  "auto_capture",
+  "sb_advance",
+  "advance_type",
+  "advance_value",
+  "cb_advance",
+  "website_payment_policy",
+  "pending_hold_minutes",
+  "link_expiry_minutes",
+  "sb_urls",
+  "public_base_url",
+  "sb_status",
+  "connection_status",
+  "last_connection_test_on",
+  "credentials_verified_for",
+  "cb_status",
+  "last_webhook_received_on",
+  "last_successful_payment_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "gateway_dashboard",
+   "fieldtype": "HTML",
+   "label": "Gateway Dashboard"
+  },
+  {
+   "fieldname": "sb_gateway",
+   "fieldtype": "Section Break",
+   "label": "Gateway"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Gateway Enabled"
+  },
+  {
+   "default": "Razorpay",
+   "fieldname": "gateway_name",
+   "fieldtype": "Data",
+   "label": "Gateway",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_gateway",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Test",
+   "description": "Only Test Mode is available. Live Mode requires a separate Administrator-approved activation.",
+   "fieldname": "environment",
+   "fieldtype": "Select",
+   "label": "Environment",
+   "options": "Test\nLive",
+   "reqd": 1
+  },
+  {
+   "description": "Credentials are stored encrypted and never sent to the browser. Use keys from Razorpay Dashboard \u2192 Account & Settings \u2192 API Keys (Test Mode).",
+   "fieldname": "sb_credentials",
+   "fieldtype": "Section Break",
+   "label": "Test Mode API Credentials"
+  },
+  {
+   "description": "Starts with rzp_test_",
+   "fieldname": "test_key_id",
+   "fieldtype": "Data",
+   "label": "Key ID"
+  },
+  {
+   "fieldname": "test_key_secret",
+   "fieldtype": "Password",
+   "label": "Key Secret",
+   "length": 255
+  },
+  {
+   "fieldname": "cb_credentials",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The secret you type when creating the webhook in Razorpay. It is NOT the API Key Secret.",
+   "fieldname": "test_webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret",
+   "length": 255
+  },
+  {
+   "fieldname": "sb_accounting",
+   "fieldtype": "Section Break",
+   "label": "Accounting"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "default": "INR",
+   "fieldname": "default_currency",
+   "fieldtype": "Link",
+   "label": "Default Currency",
+   "options": "Currency"
+  },
+  {
+   "description": "Mode of Payment used on Razorpay Payment Entries (e.g. Razorpay).",
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Mode of Payment",
+   "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "cb_accounting",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Bank-type ledger that holds captured funds until Razorpay settles them to your bank.",
+   "fieldname": "clearing_account",
+   "fieldtype": "Link",
+   "label": "Razorpay Clearing Account",
+   "options": "Account"
+  },
+  {
+   "description": "Leave empty to use the Customer's party account.",
+   "fieldname": "receivable_account",
+   "fieldtype": "Link",
+   "label": "Receivable Account (override)",
+   "options": "Account"
+  },
+  {
+   "fieldname": "sb_scenarios",
+   "fieldtype": "Section Break",
+   "label": "Payment Scenarios"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_website_advance",
+   "fieldtype": "Check",
+   "label": "Website Reservation Advance"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_front_desk",
+   "fieldtype": "Check",
+   "label": "Front Desk Payment Requests"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_invoice_payment",
+   "fieldtype": "Check",
+   "label": "Outstanding Sales Invoice Payments"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_partial_invoice_payment",
+   "fieldtype": "Check",
+   "label": "Allow Partial Invoice Payments"
+  },
+  {
+   "fieldname": "cb_scenarios",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Hotel payment",
+   "fieldname": "default_description",
+   "fieldtype": "Data",
+   "label": "Default Payment Description"
+  },
+  {
+   "default": "1",
+   "description": "If Razorpay reports a payment as authorized, capture it server-side for the exact order amount. Authorized payments are never treated as paid.",
+   "fieldname": "auto_capture",
+   "fieldtype": "Check",
+   "label": "Capture Authorized Payments"
+  },
+  {
+   "fieldname": "sb_advance",
+   "fieldtype": "Section Break",
+   "label": "Reservation Advance Policy"
+  },
+  {
+   "default": "Percentage",
+   "fieldname": "advance_type",
+   "fieldtype": "Select",
+   "label": "Advance Type",
+   "options": "Percentage\nFixed Amount\nFull Amount"
+  },
+  {
+   "default": "25",
+   "description": "Percentage of the reservation total, or a fixed amount per reservation. Never more than the balance.",
+   "fieldname": "advance_value",
+   "fieldtype": "Float",
+   "label": "Advance Value"
+  },
+  {
+   "fieldname": "cb_advance",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Optional",
+   "description": "Required: unpaid website reservations are cancelled automatically after the hold period.",
+   "fieldname": "website_payment_policy",
+   "fieldtype": "Select",
+   "label": "Website Payment Policy",
+   "options": "Optional\nRequired"
+  },
+  {
+   "default": "30",
+   "fieldname": "pending_hold_minutes",
+   "fieldtype": "Int",
+   "label": "Unpaid Hold (minutes)"
+  },
+  {
+   "default": "1440",
+   "fieldname": "link_expiry_minutes",
+   "fieldtype": "Int",
+   "label": "Payment Link Validity (minutes)"
+  },
+  {
+   "fieldname": "sb_urls",
+   "fieldtype": "Section Break",
+   "label": "Website & Webhook"
+  },
+  {
+   "description": "Public https URL of this site, used for payment links and the webhook endpoint. Leave empty to use the site URL.",
+   "fieldname": "public_base_url",
+   "fieldtype": "Data",
+   "label": "Public Base URL",
+   "options": "URL"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_status",
+   "fieldtype": "Section Break",
+   "label": "Status (system managed)"
+  },
+  {
+   "fieldname": "connection_status",
+   "fieldtype": "Data",
+   "label": "Connection Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_connection_test_on",
+   "fieldtype": "Datetime",
+   "label": "Last Connection Test",
+   "read_only": 1
+  },
+  {
+   "fieldname": "credentials_verified_for",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Credentials Verified For",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_webhook_received_on",
+   "fieldtype": "Datetime",
+   "label": "Last Valid Webhook",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_successful_payment_on",
+   "fieldtype": "Datetime",
+   "label": "Last Successful Payment",
+   "read_only": 1
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-17 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Hotel Payment Gateway Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "role": "Accounts Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

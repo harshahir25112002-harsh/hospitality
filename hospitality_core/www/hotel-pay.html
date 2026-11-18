@@ -1,0 +1,215 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<style>
+  .hp-wrap{--hp-ink:#14213d;--hp-muted:#5b6475;--hp-line:#e4e8ef;--hp-bg:#f5f7fb;--hp-card:#fff;--hp-accent:#0f62fe;--hp-ok:#0a7d4b;--hp-ok-bg:#e7f6ee;--hp-err:#b42318;--hp-err-bg:#fdecea;--hp-warn:#8a5a00;--hp-warn-bg:#fff4dc;
+    max-width:520px;margin:32px auto 64px;padding:0 16px;font-family:inherit;color:var(--hp-ink)}
+  .hp-card{background:var(--hp-card);border:1px solid var(--hp-line);border-radius:16px;box-shadow:0 8px 30px rgba(20,33,61,.07);overflow:hidden}
+  .hp-head{display:flex;align-items:center;gap:12px;padding:20px 24px;border-bottom:1px solid var(--hp-line)}
+  .hp-logo{width:44px;height:44px;border-radius:10px;object-fit:cover;background:var(--hp-bg)}
+  .hp-hotel{font-weight:600;font-size:17px;line-height:1.2}
+  .hp-sub{font-size:13px;color:var(--hp-muted)}
+  .hp-badge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 8px;border-radius:6px;background:var(--hp-warn-bg);color:var(--hp-warn);white-space:nowrap}
+  .hp-body{padding:20px 24px 24px}
+  .hp-amount{font-size:34px;font-weight:700;letter-spacing:-.02em;margin:4px 0 2px}
+  .hp-desc{color:var(--hp-muted);font-size:14px;margin-bottom:18px}
+  .hp-rows{border:1px solid var(--hp-line);border-radius:12px;padding:4px 14px;margin-bottom:20px}
+  .hp-row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;font-size:14px;border-bottom:1px solid var(--hp-line)}
+  .hp-row:last-child{border-bottom:0}
+  .hp-row span{color:var(--hp-muted)} .hp-row strong{font-weight:600;text-align:right;word-break:break-word}
+  .hp-btn{display:block;width:100%;border:0;border-radius:10px;padding:14px 16px;font-size:16px;font-weight:600;background:var(--hp-accent);color:#fff;cursor:pointer}
+  .hp-btn:disabled{opacity:.6;cursor:progress}
+  .hp-btn.hp-secondary{background:transparent;color:var(--hp-accent);border:1px solid var(--hp-line);margin-top:10px}
+  .hp-secure{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;font-size:12px;color:var(--hp-muted)}
+  .hp-state{border-radius:12px;padding:16px;margin-bottom:18px;font-size:14px;line-height:1.5}
+  .hp-state h3{font-size:16px;margin:0 0 4px}
+  .hp-ok{background:var(--hp-ok-bg);color:var(--hp-ok)} .hp-err{background:var(--hp-err-bg);color:var(--hp-err)} .hp-wait{background:var(--hp-warn-bg);color:var(--hp-warn)}
+  .hp-skel{height:220px;border-radius:12px;background:linear-gradient(90deg,var(--hp-bg),#eceff5,var(--hp-bg));background-size:200% 100%;animation:hp-sh 1.2s infinite}
+  @keyframes hp-sh{to{background-position:-200% 0}}
+  @media (prefers-color-scheme: dark){
+    .hp-wrap{--hp-ink:#e8ecf4;--hp-muted:#a3acbd;--hp-line:#2b3242;--hp-bg:#161b26;--hp-card:#1d2331;--hp-ok-bg:#0f2e20;--hp-ok:#6fd3a0;--hp-err-bg:#3a1714;--hp-err:#ff9b8f;--hp-warn-bg:#33270c;--hp-warn:#f5c66b}
+  }
+</style>
+
+<div class="hp-wrap">
+  <div class="hp-card">
+    <div class="hp-head">
+      <img class="hp-logo" id="hp-logo" alt="" hidden>
+      <div><div class="hp-hotel" id="hp-hotel">&nbsp;</div><div class="hp-sub">Secure online payment</div></div>
+      <span class="hp-badge" id="hp-test" hidden>TEST MODE</span>
+    </div>
+    <div class="hp-body" id="hp-body"><div class="hp-skel"></div></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var API = "/api/method/hospitality_core.api.razorpay.";
+  var token = new URLSearchParams(window.location.search).get("token") || "";
+  var body = document.getElementById("hp-body");
+  var ctx = null, busy = false, pollTimer = null, pollUntil = 0;
+
+  function esc(v) { var d = document.createElement("div"); d.textContent = v == null ? "" : String(v); return d.innerHTML; }
+  function money(v, cur) {
+    try { return new Intl.NumberFormat("en-IN", { style: "currency", currency: cur || "INR" }).format(v); }
+    catch (e) { return (cur || "") + " " + Number(v).toFixed(2); }
+  }
+  function fmtDate(s) { if (!s) return ""; var d = new Date(s + "T00:00:00"); return isNaN(d) ? s : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
+
+  async function call(method, params, verb) {
+    verb = verb || "GET";
+    var url = API + method, opts = { method: verb, credentials: "same-origin", headers: { Accept: "application/json" } };
+    if (verb === "GET") { url += "?" + new URLSearchParams(params).toString(); }
+    else {
+      opts.headers["Content-Type"] = "application/json";
+      if (window.frappe && frappe.csrf_token && frappe.csrf_token !== "None") opts.headers["X-Frappe-CSRF-Token"] = frappe.csrf_token;
+      opts.body = JSON.stringify(params);
+    }
+    var res, data = null;
+    try { res = await fetch(url, opts); } catch (e) { throw new Error("We could not reach the hotel. Check your connection and try again."); }
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (!res.ok) {
+      var msg = "";
+      try { msg = JSON.parse(JSON.parse(data._server_messages)[0]).message; msg = new DOMParser().parseFromString(msg, "text/html").body.textContent; } catch (e) { msg = ""; }
+      throw new Error(msg || (res.status === 429 ? "Too many attempts. Please wait a minute and try again." : "Something went wrong. Please try again."));
+    }
+    return data && data.message;
+  }
+
+  function header(c) {
+    document.getElementById("hp-hotel").textContent = c.hotel_name || "Hotel";
+    document.getElementById("hp-test").hidden = !c.test_mode;
+    var logo = document.getElementById("hp-logo");
+    if (c.hotel_logo) { logo.src = c.hotel_logo; logo.hidden = false; }
+  }
+
+  function rows(c) {
+    var r = function (a, b) { return b ? '<div class="hp-row"><span>' + a + "</span><strong>" + esc(b) + "</strong></div>" : ""; };
+    return '<div class="hp-rows">' +
+      r(c.sales_invoice ? "Invoice" : "Reservation", c.sales_invoice || c.reservation || c.reference) +
+      r("Guest", c.guest_name) +
+      r("Stay", c.check_in_date ? fmtDate(c.check_in_date) + " → " + fmtDate(c.check_out_date) : "") +
+      r("Room type", c.room_type) +
+      r("Payment ID", c.payment_id) + "</div>";
+  }
+
+  function render(state, message) {
+    var c = ctx;
+    header(c);
+    var html = "";
+    if (c.status === "paid") {
+      html += '<div class="hp-state hp-ok"><h3>Payment successful</h3>Thank you. Your payment has been verified and recorded by the hotel.</div>';
+    } else if (c.status === "processing" || state === "verifying") {
+      html += '<div class="hp-state hp-wait"><h3>Confirming your payment…</h3>' + (message || "Please keep this page open. This usually takes a few seconds.") + "</div>";
+    } else if (c.status === "expired" || c.status === "cancelled") {
+      html += '<div class="hp-state hp-err"><h3>This payment link is no longer active</h3>Please contact the hotel for a new link.</div>';
+    } else if (state === "error" || c.status === "failed") {
+      html += '<div class="hp-state hp-err"><h3>Payment not completed</h3>' + esc(message || c.failure_reason || "The payment did not go through. No money was taken for this attempt.") + "</div>";
+    }
+    html += '<div class="hp-sub">Amount</div><div class="hp-amount">' + esc(money(c.amount, c.currency)) + "</div>" +
+      '<div class="hp-desc">' + esc(c.description || "") + "</div>" + rows(c);
+    var payable = ["pending", "failed"].indexOf(c.status) >= 0 && state !== "verifying";
+    if (payable) {
+      html += '<button class="hp-btn" id="hp-pay">' + (c.status === "failed" || state === "error" ? "Retry payment" : "Pay " + esc(money(c.amount, c.currency)) + " securely") + "</button>";
+    }
+    if (c.status === "processing" || state === "verifying") {
+      html += '<button class="hp-btn hp-secondary" id="hp-refresh">Check payment status</button>';
+    }
+    html += '<div class="hp-secure">&#128274; Payments are processed by Razorpay. Card and UPI details never reach the hotel.</div>';
+    body.innerHTML = html;
+    var pay = document.getElementById("hp-pay");
+    if (pay) pay.addEventListener("click", startCheckout);
+    var ref = document.getElementById("hp-refresh");
+    if (ref) ref.addEventListener("click", function () { refresh(true); });
+  }
+
+  function fatal(msg) {
+    body.innerHTML = '<div class="hp-state hp-err"><h3>Payment unavailable</h3>' + esc(msg) + "</div>";
+  }
+
+  function loadCheckoutJs() {
+    if (window.Razorpay) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.onload = resolve;
+      s.onerror = function () { reject(new Error("The secure checkout could not be loaded. Please check your connection.")); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function startCheckout() {
+    if (busy) return;
+    busy = true;
+    var btn = document.getElementById("hp-pay");
+    if (btn) { btn.disabled = true; btn.textContent = "Opening secure checkout…"; }
+    try {
+      var results = await Promise.all([call("create_order", { token: token }, "POST"), loadCheckoutJs()]);
+      ctx = results[0];
+      if (ctx.status === "paid" || !ctx.checkout) { busy = false; render(); return; }
+      var co = ctx.checkout;
+      var rzp = new window.Razorpay({
+        key: co.key, order_id: co.order_id, amount: co.amount, currency: co.currency,
+        name: co.name, description: co.description, image: co.image || undefined,
+        prefill: co.prefill, notes: co.notes, theme: { color: "#0f62fe" },
+        retry: { enabled: true },
+        handler: function (resp) { verify(resp); },
+        modal: { ondismiss: function () { busy = false; call("report_checkout_event", { token: token, event: "dismissed" }, "POST").then(function (c) { if (c) ctx = c; render(); }).catch(function () { render(); }); } }
+      });
+      rzp.on("payment.failed", function (resp) {
+        // display only: the server re-reads the order from Razorpay, the browser's report is not trusted
+        var reason = resp && resp.error && resp.error.description;
+        call("report_checkout_event", { token: token, event: "failed" }, "POST").then(function (c) { if (c) ctx = c; }).catch(function () {});
+        ctx.failure_reason = reason || ctx.failure_reason;
+      });
+      rzp.open();
+    } catch (e) {
+      busy = false;
+      if (ctx) render("error", e.message); else fatal(e.message);
+    }
+  }
+
+  async function verify(resp) {
+    render("verifying");
+    try {
+      ctx = await call("verify_payment", {
+        token: token, razorpay_order_id: resp.razorpay_order_id,
+        razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature
+      }, "POST");
+    } catch (e) {
+      render("verifying", "We are confirming the payment with the bank. You can safely refresh this page.");
+    }
+    busy = false;
+    if (ctx.status === "paid") { render(); return; }
+    pollUntil = Date.now() + 120000;
+    poll();
+  }
+
+  function poll() {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(async function () {
+      await refresh(false);
+      if (ctx.status !== "paid" && ctx.status !== "failed" && Date.now() < pollUntil) poll();
+    }, 3000);
+  }
+
+  async function refresh(manual) {
+    try {
+      ctx = await call("get_payment_status", { token: token });
+      render(ctx.status === "processing" ? "verifying" : null);
+    } catch (e) { if (manual) render("error", e.message); }
+  }
+
+  async function init() {
+    if (!/^[A-Za-z0-9_-]{32,64}$/.test(token)) { fatal("This payment link is invalid. Please use the link provided by the hotel."); return; }
+    try {
+      ctx = await call("get_payment_context", { token: token });
+      render(ctx.status === "processing" ? "verifying" : null);
+      if (ctx.status === "processing") { pollUntil = Date.now() + 120000; poll(); }
+    } catch (e) { fatal(e.message); }
+  }
+  init();
+})();
+</script>
+{% endblock %}
