@@ -36,6 +36,15 @@ def run_all():
     res = get_console_data()
     print(f"Front Desk Console KPIs: {res['kpis']}")
 
+    print("--- 8. Testing OTA (Channex) Integration ---")
+    from hospitality_core.tests.test_ota import TestOTAIntegration
+    ota_test = TestOTAIntegration()
+    ota_test.setUp()
+    ota_test.test_ota_new_booking_webhook()
+    ota_test.test_ota_duplicate_prevention()
+    ota_test.test_ota_booking_cancellation()
+    print("SUCCESS: OTA integration tests passed!")
+
     print("\n==========================================")
     print("ALL ACCEPTANCE TESTS & REPORTS PASSED 100%!")
     print("==========================================")

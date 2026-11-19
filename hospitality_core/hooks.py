@@ -35,6 +35,16 @@ doc_events = {
     "Sales Invoice": {
         "validate": "hospitality_core.pos.validate_sales_invoice",
         "before_submit": "hospitality_core.pos.before_submit_sales_invoice"
+    },
+    "Hotel Reservation": {
+        "on_update": "hospitality_core.api.ota.on_reservation_update",
+        "on_trash": "hospitality_core.api.ota.on_reservation_update"
+    },
+    "Hotel Room": {
+        "on_update": "hospitality_core.api.ota.on_room_update"
+    },
+    "Room Rate Plan": {
+        "on_update": "hospitality_core.api.ota.on_rate_plan_update"
     }
 }
 
@@ -52,6 +62,9 @@ scheduler_events = {
     "cron": {
         "*/5 * * * *": [
             "hospitality_core.integrations.razorpay.payments.expire_and_release"
+        ],
+        "*/15 * * * *": [
+            "hospitality_core.api.ota.pull_booking_revisions"
         ]
     },
     "daily": [

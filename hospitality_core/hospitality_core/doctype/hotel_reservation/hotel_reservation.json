@@ -34,7 +34,13 @@
   "column_break_identity",
   "id_verified_by",
   "section_break_remarks",
-  "remarks"
+  "remarks",
+  "section_break_ota",
+  "ota_source",
+  "ota_booking_id",
+  "column_break_ota",
+  "ota_commission",
+  "ota_booking_log"
  ],
  "fields": [
   {
@@ -240,6 +246,46 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_ota",
+   "fieldtype": "Section Break",
+   "label": "Online Travel Agency (OTA)"
+  },
+  {
+   "description": "e.g. Booking.com, MakeMyTrip, Agoda, Goibibo",
+   "fieldname": "ota_source",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "OTA Source",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ota_booking_id",
+   "fieldtype": "Data",
+   "label": "OTA Booking ID",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ota",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ota_commission",
+   "fieldtype": "Currency",
+   "label": "OTA Commission",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ota_booking_log",
+   "fieldtype": "Link",
+   "label": "OTA Booking Log",
+   "no_copy": 1,
+   "options": "OTA Booking Log",
+   "read_only": 1
   }
  ],
  "links": [],

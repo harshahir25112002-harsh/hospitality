@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "creation": "2026-11-19 19:15:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "room_type",
+  "channex_room_type_id",
+  "channex_room_type_name",
+  "is_synced"
+ ],
+ "fields": [
+  {
+   "fieldname": "room_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Room Type",
+   "options": "Hotel Room Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "channex_room_type_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Channex Room Type ID",
+   "description": "UUID from Channex. Auto-filled after push or enter manually."
+  },
+  {
+   "fieldname": "channex_room_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Channex Name",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_synced",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Synced",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-19 19:15:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "OTA Room Type Map",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC"
+}
+

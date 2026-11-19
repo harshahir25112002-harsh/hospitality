@@ -1,0 +1,65 @@
+{
+ "actions": [],
+ "creation": "2026-11-19 19:15:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rate_plan",
+  "room_type",
+  "channex_rate_plan_id",
+  "channex_rate_plan_name",
+  "is_synced"
+ ],
+ "fields": [
+  {
+   "fieldname": "rate_plan",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Rate Plan",
+   "options": "Room Rate Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "room_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Room Type",
+   "options": "Hotel Room Type",
+   "read_only": 1,
+   "fetch_from": "rate_plan.room_type"
+  },
+  {
+   "fieldname": "channex_rate_plan_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Channex Rate Plan ID",
+   "description": "UUID from Channex. Auto-filled after push or enter manually."
+  },
+  {
+   "fieldname": "channex_rate_plan_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Channex Name",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_synced",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Synced",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-19 19:15:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "OTA Rate Plan Map",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC"
+}
+
