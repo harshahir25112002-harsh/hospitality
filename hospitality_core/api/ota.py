@@ -650,9 +650,10 @@ def register_webhook():
 	payload = {
 		"webhook": {
 			"property_id": settings.channex_property_id,
-			"event": "booking",
+			"event_mask": "*",
 			"callback_url": webhook_endpoint,
-			"is_active": True
+			"is_active": True,
+			"send_data": True
 		}
 	}
 
@@ -668,6 +669,28 @@ def register_webhook():
 			})
 			frappe.db.commit()
 			return {"status": "success", "webhook_id": webhook_id, "url": webhook_endpoint}
+		elif resp.status_code == 422:
+			# Check if webhook for this callback_url already exists on Channex
+			get_resp = requests.get(url, headers=headers, timeout=15)
+			if get_resp.status_code == 200:
+				existing_webhooks = get_resp.json().get("data", [])
+				for wh in existing_webhooks:
+					wh_attrs = wh.get("attributes", {})
+					if wh_attrs.get("callback_url") == webhook_endpoint:
+						webhook_id = wh.get("id")
+						frappe.db.set_single_value("OTA Settings", {
+							"webhook_url": webhook_endpoint,
+							"channex_webhook_id": webhook_id,
+							"webhook_registered": 1
+						})
+						frappe.db.commit()
+						return {
+							"status": "success",
+							"webhook_id": webhook_id,
+							"url": webhook_endpoint,
+							"message": _("Existing webhook reused and linked.")
+						}
+			frappe.throw(_("Channex returned HTTP {0}: {1}").format(resp.status_code, resp.text[:200]))
 		else:
 			frappe.throw(_("Channex returned HTTP {0}: {1}").format(resp.status_code, resp.text[:200]))
 	except Exception as e:
