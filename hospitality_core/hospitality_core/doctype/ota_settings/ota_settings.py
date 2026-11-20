@@ -117,8 +117,9 @@ def test_connection():
 @frappe.whitelist()
 def fetch_room_types_from_ota():
 	"""
-	Fetches room types from connected OTA / Channex property and creates
-	Hotel Room Type and Hotel Room records in ERPNext if they don't already exist.
+	Fetches room types from connected OTA / Channex property and synchronizes
+	Hotel Room Type and Hotel Room records in ERPNext to match Channex exactly.
+	Removes extra unused rooms if the room count was reduced in Channex.
 	"""
 	settings = frappe.get_single("OTA Settings")
 	if not settings.property_id:
@@ -140,11 +141,12 @@ def fetch_room_types_from_ota():
 		if not data:
 			return {
 				"status": "info",
-				"message": _("No room types found for this property in OTA. You can click 'Create sample rooms' on Front Desk Console instead.")
+				"message": _("No room types found for this property in OTA.")
 			}
 
 		created_types = []
 		created_rooms = []
+		deleted_rooms = []
 
 		for idx, item in enumerate(data):
 			attrs = item.get("attributes") or {}
@@ -152,7 +154,7 @@ def fetch_room_types_from_ota():
 			occupancy = int(attrs.get("default_occupancy") or 2)
 			count_of_rooms = int(attrs.get("count_of_rooms") or 1)
 
-			# Create Hotel Room Type if not exists
+			# Create or update Hotel Room Type
 			if not frappe.db.exists("Hotel Room Type", title):
 				doc = frappe.get_doc({
 					"doctype": "Hotel Room Type",
@@ -164,29 +166,105 @@ def fetch_room_types_from_ota():
 				doc.insert(ignore_permissions=True)
 				created_types.append(title)
 
-			# Create physical rooms if needed
+			# Check existing rooms for this room type
+			existing_rooms = frappe.get_all(
+				"Hotel Room",
+				filters={"room_type": title},
+				fields=["name", "room_number", "current_reservation"],
+				order_by="room_number asc, name asc"
+			)
+
+			current_count = len(existing_rooms)
 			base_num = (idx + 1) * 100
-			for r_idx in range(1, count_of_rooms + 1):
-				room_num = str(base_num + r_idx)
-				if not frappe.db.exists("Hotel Room", room_num):
-					room_doc = frappe.get_doc({
-						"doctype": "Hotel Room",
-						"room_number": room_num,
-						"room_type": title,
-						"floor": str(idx + 1),
-						"status": "Available",
-						"is_enabled": 1
-					})
-					room_doc.insert(ignore_permissions=True)
-					created_rooms.append(room_num)
+
+			# If fewer rooms exist than count_of_rooms, create the missing ones
+			if current_count < count_of_rooms:
+				for r_idx in range(current_count + 1, count_of_rooms + 1):
+					room_num = str(base_num + r_idx)
+					if not frappe.db.exists("Hotel Room", room_num):
+						room_doc = frappe.get_doc({
+							"doctype": "Hotel Room",
+							"room_number": room_num,
+							"room_type": title,
+							"floor": str(idx + 1),
+							"status": "Available",
+							"is_enabled": 1
+						})
+						room_doc.insert(ignore_permissions=True)
+						created_rooms.append(room_num)
+
+			# If MORE rooms exist than count_of_rooms, safely delete extra unreserved rooms
+			elif current_count > count_of_rooms:
+				surplus = existing_rooms[count_of_rooms:]
+				for r in surplus:
+					has_res = r.current_reservation or frappe.db.exists(
+						"Hotel Reservation",
+						{"room": r.name, "status": ["in", ["Reserved", "Checked In"]]}
+					)
+					if not has_res:
+						try:
+							frappe.delete_doc("Hotel Room", r.name, force=True, ignore_permissions=True)
+							deleted_rooms.append(r.name)
+						except Exception:
+							pass
 
 		frappe.db.commit()
+
+		total_now = frappe.db.count("Hotel Room", {"is_enabled": 1})
+		msg = _("Successfully synchronized rooms with Channex!<br><br><b>Total Active Rooms in ERPNext: {0}</b>").format(total_now)
+		if deleted_rooms:
+			msg += _("<br>Cleaned up {0} extra dummy rooms.").format(len(deleted_rooms))
+
 		return {
 			"status": "success",
-			"message": _("Synced {0} Room Types and created {1} Rooms.").format(len(data), len(created_rooms)),
+			"message": msg,
 			"types_count": len(data),
-			"rooms_count": len(created_rooms)
+			"total_rooms": total_now,
+			"deleted_count": len(deleted_rooms)
 		}
 	except Exception as e:
 		log_ota_error(str(e))
-		frappe.throw(_("Error fetching room types: {0}").format(str(e)))
+		frappe.throw(_("Error synchronizing rooms: {0}").format(str(e)))
+
+
+@frappe.whitelist()
+def clean_extra_rooms(keep_per_type=1):
+	"""
+	Direct utility to clean up any extra dummy rooms in ERPNext,
+	keeping only 1 room per room type (or keep_per_type),
+	leaving unreserved rooms deleted.
+	"""
+	keep_per_type = int(keep_per_type or 1)
+	room_types = frappe.get_all("Hotel Room Type", fields=["name"])
+	deleted = []
+
+	for rt in room_types:
+		rooms = frappe.get_all(
+			"Hotel Room",
+			filters={"room_type": rt.name},
+			fields=["name", "current_reservation"],
+			order_by="room_number asc, name asc"
+		)
+		if len(rooms) > keep_per_type:
+			surplus = rooms[keep_per_type:]
+			for r in surplus:
+				has_res = r.current_reservation or frappe.db.exists(
+					"Hotel Reservation",
+					{"room": r.name, "status": ["in", ["Reserved", "Checked In"]]}
+				)
+				if not has_res:
+					try:
+						frappe.delete_doc("Hotel Room", r.name, force=True, ignore_permissions=True)
+						deleted.append(r.name)
+					except Exception:
+						pass
+
+	frappe.db.commit()
+	total_left = frappe.db.count("Hotel Room", {"is_enabled": 1})
+	return {
+		"status": "success",
+		"deleted_count": len(deleted),
+		"deleted_rooms": deleted,
+		"total_rooms_remaining": total_left,
+		"message": f"Deleted {len(deleted)} extra rooms. Total rooms remaining: {total_left}"
+	}
