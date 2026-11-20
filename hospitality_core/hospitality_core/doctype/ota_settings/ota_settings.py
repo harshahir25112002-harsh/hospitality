@@ -144,6 +144,20 @@ def fetch_room_types_from_ota():
 				"message": _("No room types found for this property in OTA.")
 			}
 
+				# Cache mapping of Channex room_type_id -> human title
+		try:
+			channex_map = {}
+			for item in data:
+				r_id = item.get("id")
+				attrs = item.get("attributes") or {}
+				t = (attrs.get("title") or "").strip()
+				if r_id and t:
+					channex_map[r_id] = t
+			if channex_map:
+				frappe.cache().set_value("channex_room_type_map", channex_map, expires_in_sec=86400)
+		except Exception:
+			pass
+
 		created_types = []
 		created_rooms = []
 		deleted_rooms = []

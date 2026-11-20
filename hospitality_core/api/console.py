@@ -853,7 +853,7 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
     4. Links Hotel Reservation <-> OTA Reservation.
     """
     require_console_access()
-    from frappe.utils import cint
+    from frappe.utils import cint, flt
     ota = frappe.get_doc("OTA Reservation", ota_reservation_name)
 
     if ota.hotel_reservation and frappe.db.exists("Hotel Reservation", ota.hotel_reservation):
@@ -863,7 +863,29 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
             "message": _("Booking is already converted to {0}.").format(ota.hotel_reservation)
         }
 
-    # 1. Match or Create Customer
+    from hospitality_core.api.ota import get_ota_room_type_map
+    rt_map = get_ota_room_type_map()
+
+    # 1. Resolve room type human name
+    target_name = (ota.room_type_name or "").strip()
+    if len(target_name) == 36 and target_name in rt_map:
+        target_name = rt_map[target_name]
+        ota.room_type_name = target_name
+        frappe.db.set_value("OTA Reservation", ota.name, "room_type_name", target_name)
+
+    chosen_type = room_type
+    if not chosen_type and target_name:
+        chosen_type = frappe.db.get_value("Hotel Room Type", {"name": target_name}, "name") \
+            or frappe.db.get_value("Hotel Room Type", {"room_type_name": target_name}, "name") \
+            or frappe.db.get_value("Hotel Room Type", {"room_type_name": ["like", f"%{target_name}%"]}, "name")
+
+    if not chosen_type:
+        chosen_type = frappe.db.get_value("Hotel Room Type", {}, "name")
+
+    if not chosen_type:
+        frappe.throw(_("No Hotel Room Types found. Please create or sync room types first."))
+
+    # 2. Match or Create Customer
     customer = None
     if ota.guest_phone:
         customer = frappe.db.get_value("Customer", {"mobile_no": ota.guest_phone, "is_hotel_guest": 1}, "name")
@@ -886,17 +908,6 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
         })
         cust_doc.insert(ignore_permissions=True)
         customer = cust_doc.name
-
-    # 2. Match Room Type
-    chosen_type = room_type
-    if not chosen_type and ota.room_type_name:
-        chosen_type = frappe.db.get_value("Hotel Room Type", {"name": ota.room_type_name}, "name")             or frappe.db.get_value("Hotel Room Type", {"room_type_name": ota.room_type_name}, "name")             or frappe.db.get_value("Hotel Room Type", {"room_type_name": ["like", f"%{ota.room_type_name}%"]}, "name")
-
-    if not chosen_type:
-        chosen_type = frappe.db.get_value("Hotel Room Type", {}, "name")
-
-    if not chosen_type:
-        frappe.throw(_("No Hotel Room Types found. Please create or sync room types first."))
 
     # 3. Create Hotel Reservation
     company = get_company()
@@ -929,12 +940,15 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
             }
         ]
     })
+    res.flags.ignore_validate_inventory = True
+    res.flags.ignore_validate_capacity = True
     res.insert(ignore_permissions=True)
 
     # 4. Link back to OTA Reservation
     frappe.db.set_value("OTA Reservation", ota.name, {
         "hotel_reservation": res.name,
-        "status": "Accepted"
+        "status": "Accepted",
+        "room_type_name": target_name
     })
     frappe.db.commit()
 

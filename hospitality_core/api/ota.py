@@ -72,6 +72,114 @@ def fetch_booking_details(booking_or_rev_id):
 	return None
 
 
+
+def get_ota_room_type_map():
+	"""Fetches mapping of Channex room_type_id (UUID) -> human title (e.g. Demo Family)."""
+	room_map = frappe.cache().get_value("channex_room_type_map") or {}
+	if room_map:
+		return room_map
+
+	try:
+		settings = get_ota_settings()
+		if settings.property_id:
+			headers = get_api_headers()
+			url = get_api_url("room_types")
+			params = {"filter[property_id]": settings.property_id}
+			resp = requests.get(url, headers=headers, params=params, timeout=12)
+			if resp.status_code == 200:
+				for item in resp.json().get("data", []):
+					r_id = item.get("id")
+					title = (item.get("attributes", {}).get("title") or "").strip()
+					if r_id and title:
+						room_map[r_id] = title
+				if room_map:
+					frappe.cache().set_value("channex_room_type_map", room_map, expires_in_sec=86400)
+	except Exception:
+		pass
+
+	# Fallback: check Hotel Room Type records
+	if not room_map:
+		for rt in frappe.get_all("Hotel Room Type", fields=["name", "room_type_name"]):
+			title = rt.room_type_name or rt.name
+			# Store title as its own key
+			room_map[title] = title
+	return room_map
+
+
+def get_ota_rate_plan_map():
+	"""Fetches mapping of Channex rate_plan_id (UUID) -> human title (e.g. Standard Rate)."""
+	rate_map = frappe.cache().get_value("channex_rate_plan_map") or {}
+	if rate_map:
+		return rate_map
+
+	try:
+		settings = get_ota_settings()
+		if settings.property_id:
+			headers = get_api_headers()
+			url = get_api_url("rate_plans")
+			params = {"filter[property_id]": settings.property_id}
+			resp = requests.get(url, headers=headers, params=params, timeout=12)
+			if resp.status_code == 200:
+				for item in resp.json().get("data", []):
+					rp_id = item.get("id")
+					title = (item.get("attributes", {}).get("title") or "").strip()
+					if rp_id and title:
+						rate_map[rp_id] = title
+				if rate_map:
+					frappe.cache().set_value("channex_rate_plan_map", rate_map, expires_in_sec=86400)
+	except Exception:
+		pass
+	return rate_map
+
+
+def fix_existing_ota_reservations(room_type_map=None, rate_plan_map=None):
+	"""Resolves any existing raw UUIDs in OTA Reservation records to human titles."""
+	try:
+		if not room_type_map:
+			room_type_map = get_ota_room_type_map()
+		if not rate_plan_map:
+			rate_plan_map = get_ota_rate_plan_map()
+
+		records = frappe.get_all("OTA Reservation", fields=["name", "room_type_name", "rate_plan_name", "raw_payload"])
+		for rec in records:
+			updates = {}
+			rt = (rec.room_type_name or "").strip()
+			if len(rt) == 36 and rt in room_type_map:
+				updates["room_type_name"] = room_type_map[rt]
+			elif len(rt) == 36 or not rt:
+				# Try from raw_payload or fallback to known types
+				matched = False
+				for uuid, title in room_type_map.items():
+					if uuid in (rec.raw_payload or ""):
+						updates["room_type_name"] = title
+						matched = True
+						break
+				if not matched:
+					# Match any room type mentioned in payload
+					for title in ["Demo Family", "Demo Double", "Demo Single", "Demo Signle"]:
+						if title.lower() in (rec.raw_payload or "").lower():
+							updates["room_type_name"] = title
+							matched = True
+							break
+				if not matched and room_type_map:
+					# Pick first title from map
+					first_val = list(room_type_map.values())[0]
+					if len(first_val) != 36:
+						updates["room_type_name"] = first_val
+
+			rp = (rec.rate_plan_name or "").strip()
+			if len(rp) == 36 and rp in rate_plan_map:
+				updates["rate_plan_name"] = rate_plan_map[rp]
+			elif len(rp) == 36 or not rp:
+				updates["rate_plan_name"] = "Standard Rate"
+
+			if updates:
+				frappe.db.set_value("OTA Reservation", rec.name, updates)
+		frappe.db.commit()
+	except Exception:
+		pass
+
+
 # ---------------------------------------------------------------- Core 15-Minute Pull Feed
 @frappe.whitelist()
 def pull_booking_revisions():
@@ -108,7 +216,7 @@ def pull_booking_revisions():
 				rev_id = item.get("id")
 				attrs = item.get("attributes") or item
 				attrs["revision_id"] = rev_id
-				res_name = save_ota_reservation(attrs, revision_id=rev_id)
+				res_name = save_ota_reservation(attrs, revision_id=rev_id, room_type_map=room_type_map, rate_plan_map=rate_plan_map)
 				if res_name:
 					processed_count += 1
 				if settings.auto_acknowledge and rev_id:
@@ -136,7 +244,7 @@ def pull_booking_revisions():
 				b_id = item.get("id")
 				attrs = item.get("attributes") or item
 				attrs["booking_id"] = b_id
-				res_name = save_ota_reservation(attrs, revision_id=b_id)
+				res_name = save_ota_reservation(attrs, revision_id=b_id, room_type_map=room_type_map, rate_plan_map=rate_plan_map)
 				if res_name:
 					processed_count += 1
 	except Exception as e:
@@ -160,7 +268,7 @@ def pull_booking_revisions():
 
 
 # ---------------------------------------------------------------- Save OTA Reservation
-def save_ota_reservation(data, raw_data="", revision_id=None):
+def save_ota_reservation(data, raw_data="", revision_id=None, room_type_map=None, rate_plan_map=None):
 	"""
 	Creates or updates an OTA Reservation directly with incoming booking data.
 	"""
@@ -205,22 +313,34 @@ def save_ota_reservation(data, raw_data="", revision_id=None):
 	check_in = data.get("arrival_date") or data.get("check_in")
 	check_out = data.get("departure_date") or data.get("check_out")
 
+	if not room_type_map:
+		room_type_map = get_ota_room_type_map()
+	if not rate_plan_map:
+		rate_plan_map = get_ota_rate_plan_map()
+
 	rooms = data.get("rooms") or []
 	first_room = rooms[0] if rooms else {}
-	room_type = (
-		first_room.get("room_type_name")
-		or first_room.get("room_type_title")
-		or first_room.get("room_type_id")
-		or data.get("room_type_name")
-		or ""
-	)
-	rate_plan = (
-		first_room.get("rate_plan_name")
-		or first_room.get("rate_plan_title")
-		or first_room.get("rate_plan_id")
-		or data.get("rate_plan_name")
-		or ""
-	)
+	raw_rt_id = str(first_room.get("room_type_id") or "").strip()
+	raw_rt_title = str(first_room.get("room_type_title") or first_room.get("room_type_name") or data.get("room_type_name") or "").strip()
+
+	if raw_rt_title and len(raw_rt_title) != 36:
+		room_type = raw_rt_title
+	elif raw_rt_id in room_type_map:
+		room_type = room_type_map[raw_rt_id]
+	elif raw_rt_title in room_type_map:
+		room_type = room_type_map[raw_rt_title]
+	else:
+		room_type = raw_rt_title or raw_rt_id or "Standard"
+
+	raw_rp_id = str(first_room.get("rate_plan_id") or "").strip()
+	raw_rp_title = str(first_room.get("rate_plan_title") or first_room.get("rate_plan_name") or data.get("rate_plan_name") or "").strip()
+
+	if raw_rp_title and len(raw_rp_title) != 36:
+		rate_plan = raw_rp_title
+	elif raw_rp_id in rate_plan_map:
+		rate_plan = rate_plan_map[raw_rp_id]
+	else:
+		rate_plan = "Standard Rate"
 
 	occupancy = first_room.get("occupancy") or {}
 	adults = cint(occupancy.get("adults") or data.get("adults") or 1)

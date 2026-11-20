@@ -134,10 +134,14 @@ class HotelReservation(Document):
                 or getdate(old.check_out_date) != getdate(self.check_out_date))
 
     def validate_capacity(self):
+        if getattr(self.flags, "ignore_validate_capacity", False) or self.ota_reservation:
+            return
         validate_guest_capacity(self.room_type, self.adults, self.children)
 
     def validate_room_type_inventory(self):
         """Room-type inventory: never let overlapping active bookings exceed eligible rooms on any night."""
+        if getattr(self.flags, "ignore_validate_inventory", False) or self.ota_reservation:
+            return
         if self.room_type and not frappe.db.exists("Hotel Room Type", self.room_type):
             frappe.throw(_("Room Type {0} does not exist.").format(self.room_type))
         # In-house guests already hold a physical room; only pre-arrival bookings consume free inventory.

@@ -195,81 +195,20 @@ Object.assign(FrontDeskConsole.prototype, {
 
 
     
-    // ---------------- OTA BOOKINGS (ENTERPRISE UI/UX) ----------------
+    
+    // ---------------- OTA BOOKINGS (POLISHED ENTERPRISE UI/UX) ----------------
     render_ota_bookings($tab) {
         const me = this;
-        this.ota_filters = this.ota_filters || { status: "", text: "", channel: "" };
+        this.ota_filters = this.ota_filters || { status: "", text: "" };
         const f = this.ota_filters;
 
-        $tab.html(`
-            <div class="fd-ota-container">
-                <!-- Summary KPI Cards -->
-                <div class="fd-ota-kpis">
-                    <div class="fd-ota-kpi-card pending">
-                        <div class="fd-ota-kpi-icon">${FD.icon("alert-circle")}</div>
-                        <div class="fd-ota-kpi-data">
-                            <span class="fd-ota-kpi-val fd-kpi-new-count">0</span>
-                            <span class="fd-ota-kpi-lbl">${__("Pending Acceptance")}</span>
-                        </div>
-                    </div>
-                    <div class="fd-ota-kpi-card accepted">
-                        <div class="fd-ota-kpi-icon">${FD.icon("check-circle-2")}</div>
-                        <div class="fd-ota-kpi-data">
-                            <span class="fd-ota-kpi-val fd-kpi-acc-count">0</span>
-                            <span class="fd-ota-kpi-lbl">${__("Accepted & Reserved")}</span>
-                        </div>
-                    </div>
-                    <div class="fd-ota-kpi-card revenue">
-                        <div class="fd-ota-kpi-icon">${FD.icon("credit-card")}</div>
-                        <div class="fd-ota-kpi-data">
-                            <span class="fd-ota-kpi-val fd-kpi-revenue">0</span>
-                            <span class="fd-ota-kpi-lbl">${__("Total OTA Revenue")}</span>
-                        </div>
-                    </div>
-                    <div class="fd-ota-kpi-card total">
-                        <div class="fd-ota-kpi-icon">${FD.icon("globe")}</div>
-                        <div class="fd-ota-kpi-data">
-                            <span class="fd-ota-kpi-val fd-kpi-total-count">0</span>
-                            <span class="fd-ota-kpi-lbl">${__("Total Bookings")}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Modern Toolbar -->
-                <div class="fd-toolbar fd-ota-toolbar">
-                    <div class="fd-seg fd-ota-status-seg">
-                        <button class="fd-seg-btn ${!f.status ? "active" : ""}" data-st="">${__("All")}</button>
-                        <button class="fd-seg-btn ${f.status === "New" ? "active" : ""}" data-st="New">
-                            <span class="fd-status-dot orange"></span>${__("Pending Acceptance")}
-                        </button>
-                        <button class="fd-seg-btn ${f.status === "Accepted" ? "active" : ""}" data-st="Accepted">
-                            <span class="fd-status-dot green"></span>${__("Accepted")}
-                        </button>
-                        <button class="fd-seg-btn ${f.status === "Cancelled" ? "active" : ""}" data-st="Cancelled">
-                            ${__("Cancelled")}
-                        </button>
-                    </div>
-
-                    <div class="fd-ota-search-wrap">
-                        ${FD.icon("search")}
-                        <input class="form-control input-sm fd-ota-text" placeholder="${__("Search guest, booking ref, channel, room...")}" value="${FD.esc(f.text)}">
-                    </div>
-
-                    <div class="fd-ota-actions-right">
-                        <span class="fd-ota-sync-badge">${FD.icon("activity")} ${__("Auto-sync: every 15m")}</span>
-                        <button class="btn btn-default btn-sm fd-ota-fetch" title="${__("Fetch latest bookings from OTA right now")}">
-                            ${FD.icon("refresh-cw")} <span>${__("Fetch Now")}</span>
-                        </button>
-                        <button class="btn btn-default btn-sm fd-ota-settings" title="${__("OTA Settings")}">
-                            ${FD.icon("settings")}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Table Content -->
-                <div class="fd-ota-list">${FD.skeleton(4)}</div>
-            </div>
-        `);
+        const formatMoney = (amount, curr) => {
+            curr = (curr || "GBP").trim().toUpperCase();
+            const symbols = { "GBP": "£", "USD": "$", "EUR": "€", "INR": "₹", "AED": "AED" };
+            const sym = symbols[curr] || curr + " ";
+            const val = parseFloat(amount || 0);
+            return `${sym} ${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        };
 
         const getChannelBadge = (ch) => {
             const channel = (ch || "OTA").trim();
@@ -279,41 +218,114 @@ Object.assign(FrontDeskConsole.prototype, {
             let label = channel;
 
             if (lower.includes("booking")) {
-                bg = "#003580"; label = "Booking.com";
+                bg = "#003580"; label = "BOOKING.COM";
             } else if (lower.includes("expedia")) {
-                bg = "#00355f"; color = "#ffd200"; label = "Expedia";
+                bg = "#00355f"; color = "#ffd200"; label = "EXPEDIA";
             } else if (lower.includes("airbnb")) {
-                bg = "#ff5a5f"; label = "Airbnb";
+                bg = "#ff5a5f"; label = "AIRBNB";
             } else if (lower.includes("agoda")) {
-                bg = "#5856d6"; label = "Agoda";
+                bg = "#5856d6"; label = "AGODA";
             } else if (lower.includes("makemytrip") || lower.includes("mmt")) {
-                bg = "#eb2227"; label = "MakeMyTrip";
+                bg = "#eb2227"; label = "MAKEMYTRIP";
             }
             return `<span class="fd-channel-tag" style="background:${bg};color:${color}">${FD.esc(label)}</span>`;
         };
 
+        $tab.html(`
+            <div class="fd-ota-wrap">
+                <!-- 4 Top KPI Cards -->
+                <div class="fd-ota-kpis">
+                    <div class="fd-ota-kpi-card pending">
+                        <div class="fd-ota-kpi-icon">${FD.icon("alert-circle")}</div>
+                        <div class="fd-ota-kpi-body">
+                            <div class="fd-ota-kpi-val fd-kpi-new-count">0</div>
+                            <div class="fd-ota-kpi-lbl">${__("Pending Acceptance")}</div>
+                        </div>
+                    </div>
+                    <div class="fd-ota-kpi-card accepted">
+                        <div class="fd-ota-kpi-icon">${FD.icon("check-circle-2")}</div>
+                        <div class="fd-ota-kpi-body">
+                            <div class="fd-ota-kpi-val fd-kpi-acc-count">0</div>
+                            <div class="fd-ota-kpi-lbl">${__("Accepted & Reserved")}</div>
+                        </div>
+                    </div>
+                    <div class="fd-ota-kpi-card revenue">
+                        <div class="fd-ota-kpi-icon">${FD.icon("credit-card")}</div>
+                        <div class="fd-ota-kpi-body">
+                            <div class="fd-ota-kpi-val fd-kpi-revenue">0.00</div>
+                            <div class="fd-ota-kpi-lbl">${__("Total OTA Revenue")}</div>
+                        </div>
+                    </div>
+                    <div class="fd-ota-kpi-card total">
+                        <div class="fd-ota-kpi-icon">${FD.icon("globe")}</div>
+                        <div class="fd-ota-kpi-body">
+                            <div class="fd-ota-kpi-val fd-kpi-total-count">0</div>
+                            <div class="fd-ota-kpi-lbl">${__("Total Bookings")}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modern Toolbar -->
+                <div class="fd-ota-toolbar">
+                    <div class="fd-seg fd-ota-status-seg">
+                        <button class="fd-seg-btn ${!f.status ? "active" : ""}" data-st="">${__("All")}</button>
+                        <button class="fd-seg-btn ${f.status === "New" ? "active" : ""}" data-st="New">
+                            <span class="fd-dot orange"></span>${__("Pending Acceptance")}
+                        </button>
+                        <button class="fd-seg-btn ${f.status === "Accepted" ? "active" : ""}" data-st="Accepted">
+                            <span class="fd-dot green"></span>${__("Accepted")}
+                        </button>
+                        <button class="fd-seg-btn ${f.status === "Cancelled" ? "active" : ""}" data-st="Cancelled">
+                            ${__("Cancelled")}
+                        </button>
+                    </div>
+
+                    <div class="fd-ota-search-box">
+                        ${FD.icon("search")}
+                        <input class="form-control input-sm fd-ota-text" placeholder="${__("Search guest, booking ref, channel, room...")}" value="${FD.esc(f.text)}">
+                    </div>
+
+                    <div class="fd-ota-tools-right">
+                        <span class="fd-ota-badge-sync">${FD.icon("activity")} ${__("Auto-sync: every 15m")}</span>
+                        <button class="btn btn-default btn-sm fd-ota-fetch">
+                            ${FD.icon("refresh-cw")} <span>${__("Fetch Now")}</span>
+                        </button>
+                        <button class="btn btn-default btn-sm fd-ota-settings" title="${__("OTA Settings")}">
+                            ${FD.icon("settings")}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table Content -->
+                <div class="fd-ota-table-area">${FD.skeleton(4)}</div>
+            </div>
+        `);
+
         const load = () => {
             FD.call("hospitality_core.api.console.get_ota_bookings", { status: f.status, text: f.text }).then((rows) => {
                 rows = rows || [];
-                const $l = $tab.find(".fd-ota-list");
+                const $area = $tab.find(".fd-ota-table-area");
 
-                // Update KPIs
                 const newCount = rows.filter(r => r.status === "New" && !r.hotel_reservation).length;
                 const accCount = rows.filter(r => r.hotel_reservation || r.status === "Accepted").length;
                 let revTotal = 0;
-                rows.forEach(r => { revTotal += (r.total_amount || 0); });
+                let curr = "GBP";
+                rows.forEach(r => {
+                    revTotal += (r.total_amount || 0);
+                    if (r.currency) curr = r.currency;
+                });
 
                 $tab.find(".fd-kpi-new-count").text(newCount);
                 $tab.find(".fd-kpi-acc-count").text(accCount);
                 $tab.find(".fd-kpi-total-count").text(rows.length);
-                $tab.find(".fd-kpi-revenue").text(format_currency(revTotal, (rows[0] && rows[0].currency) || "INR"));
+                $tab.find(".fd-kpi-revenue").text(formatMoney(revTotal, curr));
 
                 if (!rows.length) {
-                    $l.html(FD.empty(__("No OTA bookings found in this view. Click 'Fetch Now' to pull bookings from Channex."), "globe"));
+                    $area.html(FD.empty(__("No OTA bookings match the selected filters."), "globe"));
                     return;
                 }
 
-                $l.html(`
+                $area.html(`
                     <div class="fd-table-wrap">
                         <table class="fd-table fd-ota-table">
                             <thead>
@@ -321,7 +333,7 @@ Object.assign(FrontDeskConsole.prototype, {
                                     <th>${__("OTA Reference & Channel")}</th>
                                     <th>${__("Guest Information")}</th>
                                     <th>${__("Stay & Occupancy")}</th>
-                                    <th>${__("Room Type & Rate")}</th>
+                                    <th>${__("Room Type & Rate Plan")}</th>
                                     <th class="text-right">${__("Total Amount")}</th>
                                     <th>${__("Status")}</th>
                                     <th class="text-right" style="min-width:180px">${__("Action")}</th>
@@ -330,61 +342,77 @@ Object.assign(FrontDeskConsole.prototype, {
                             <tbody>
                                 ${rows.map((r) => {
                                     const isAccepted = !!r.hotel_reservation || r.status === "Accepted";
-                                    let statusPill = "";
+                                    let statusHtml = "";
                                     if (isAccepted) {
-                                        statusPill = `<span class="indicator-pill green"><span class="fd-status-dot green"></span>${__("Accepted")}</span>`;
+                                        if (r.res_status === "Checked In") {
+                                            statusHtml = `<span class="fd-pill-status in-house"><span class="fd-dot green"></span>${__("In-House")}</span>`;
+                                        } else {
+                                            statusHtml = `<span class="fd-pill-status accepted"><span class="fd-dot green"></span>${__("Accepted")}</span>`;
+                                        }
                                     } else if (r.status === "Cancelled") {
-                                        statusPill = `<span class="indicator-pill red">${__("Cancelled")}</span>`;
-                                    } else if (r.status === "Modified") {
-                                        statusPill = `<span class="indicator-pill yellow">${__("Modified")}</span>`;
+                                        statusHtml = `<span class="fd-pill-status cancelled">${__("Cancelled")}</span>`;
                                     } else {
-                                        statusPill = `<span class="indicator-pill orange"><span class="fd-status-dot orange"></span>${__("Needs Acceptance")}</span>`;
+                                        statusHtml = `<span class="fd-pill-status pending"><span class="fd-dot orange"></span>${__("Needs Acceptance")}</span>`;
                                     }
 
+                                    // Guest Initials
+                                    const initials = (r.guest_name || "G").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+
                                     return `
-                                        <tr data-name="${FD.esc(r.name)}" data-res="${FD.esc(r.hotel_reservation || "")}" class="fd-ota-item-row">
+                                        <tr data-name="${FD.esc(r.name)}" data-res="${FD.esc(r.hotel_reservation || "")}" class="fd-ota-row">
                                             <td>
-                                                <div class="fd-ota-ref-box">
-                                                    <b>${FD.esc(r.ota_booking_id || r.name)}</b>
+                                                <div class="fd-ota-ref-col">
+                                                    <span class="fd-ota-ref-id">${FD.esc(r.ota_booking_id || r.name)}</span>
                                                     ${getChannelBadge(r.channel_name)}
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="fd-ota-guest">
-                                                    <span class="fd-ota-guest-name">${FD.icon("user")} <b>${FD.esc(r.guest_name || __("OTA Guest"))}</b></span>
-                                                    <span class="text-muted small">${FD.esc(r.guest_phone || r.guest_email || "")}</span>
+                                                <div class="fd-ota-guest-cell">
+                                                    <div class="fd-guest-avatar">${FD.esc(initials)}</div>
+                                                    <div>
+                                                        <div class="fd-guest-name">${FD.esc(r.guest_name || __("OTA Guest"))}</div>
+                                                        <div class="fd-guest-contact text-muted">${FD.esc(r.guest_phone || r.guest_email || "—")}</div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="fd-ota-dates">
-                                                    <span>${FD.date(r.check_in_date)} &rarr; ${FD.date(r.check_out_date)}</span>
-                                                    <span class="text-muted small">${r.nights || 1} ${__("night(s)")} · ${r.adults || 1} ${__("Adult(s)")}</span>
+                                                <div class="fd-stay-cell">
+                                                    <div class="fd-stay-dates">${FD.date(r.check_in_date)} &rarr; ${FD.date(r.check_out_date)}</div>
+                                                    <div class="fd-stay-tags">
+                                                        <span class="fd-tag-nights">${r.nights || 1} ${__("night(s)")}</span>
+                                                        <span class="text-muted small">${r.adults || 1} ${__("Adult(s)")}</span>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="fd-ota-room">
-                                                    <b>${FD.esc(r.room_type_name || "—")}</b>
-                                                    <span class="text-muted small">${FD.esc(r.rate_plan_name || "")}</span>
+                                                <div class="fd-room-cell">
+                                                    <div class="fd-room-type-title">${FD.esc(r.room_type_name || "Demo Double")}</div>
+                                                    <div class="fd-rate-plan-tag">${FD.esc(r.rate_plan_name || "Standard Rate")}</div>
                                                 </div>
                                             </td>
                                             <td class="text-right">
-                                                <div class="fd-ota-price">
-                                                    <b>${r.currency || "INR"} ${format_currency(r.total_amount || 0)}</b>
-                                                    <span class="text-muted small">${FD.esc(r.payment_status || "")}</span>
+                                                <div class="fd-amount-cell">
+                                                    <div class="fd-amount-val">${formatMoney(r.total_amount, r.currency)}</div>
+                                                    <div class="text-muted small">${FD.esc(r.payment_status || "OTA Collect")}</div>
                                                 </div>
                                             </td>
-                                            <td>${statusPill}</td>
-                                            <td class="text-right fd-row-actions">
+                                            <td>${statusHtml}</td>
+                                            <td class="text-right fd-actions-cell">
                                                 ${isAccepted ? `
-                                                    <button class="btn btn-default btn-xs fd-btn-view-res" data-res="${FD.esc(r.hotel_reservation)}" title="${__("View Hotel Reservation")}">
-                                                        ${FD.icon("calendar")} <span>${r.hotel_reservation || __("Reservation")}</span>
+                                                    ${r.res_status === "Reserved" ? `
+                                                        <button class="btn btn-primary btn-xs fd-btn-checkin-ota" data-res="${FD.esc(r.hotel_reservation)}" title="${__("Check In Guest")}">
+                                                            ${FD.icon("log-in")} <span>${__("Check In")}</span>
+                                                        </button>
+                                                    ` : ""}
+                                                    <button class="btn btn-default btn-xs fd-btn-view-res" data-res="${FD.esc(r.hotel_reservation)}" title="${__("Open Hotel Reservation")}">
+                                                        ${FD.icon("calendar")} <span>${FD.esc(r.hotel_reservation)}</span>
                                                     </button>
                                                 ` : (r.status !== "Cancelled" ? `
-                                                    <button class="btn btn-primary btn-xs fd-btn-accept-ota" data-name="${FD.esc(r.name)}" data-guest="${FD.esc(r.guest_name)}" data-dates="${FD.date(r.check_in_date)} - ${FD.date(r.check_out_date)}">
+                                                    <button class="btn btn-success btn-xs fd-btn-accept" data-name="${FD.esc(r.name)}" data-guest="${FD.esc(r.guest_name)}" data-rt="${FD.esc(r.room_type_name || "")}" data-dates="${FD.date(r.check_in_date)} - ${FD.date(r.check_out_date)}">
                                                         ${FD.icon("check")} <span>${__("Accept Booking")}</span>
                                                     </button>
                                                 ` : "")}
-                                                <button class="btn btn-default btn-xs fd-btn-view-raw" data-name="${FD.esc(r.name)}" title="${__("View Full Details")}">
+                                                <button class="btn btn-default btn-xs fd-btn-raw" data-name="${FD.esc(r.name)}" title="${__("View Raw Details")}">
                                                     ${FD.icon("eye")}
                                                 </button>
                                             </td>
@@ -416,16 +444,17 @@ Object.assign(FrontDeskConsole.prototype, {
             FD.call("hospitality_core.api.ota.pull_booking_revisions", {}, {
                 btn: e.currentTarget,
                 freeze: true,
-                freeze_message: __("Syncing with Channex...")
+                freeze_message: __("Syncing rooms & bookings with Channex...")
             }).then((r) => {
                 frappe.show_alert({
                     message: __("Synced with Channex! {0} booking(s) updated.", [r.processed || 0]),
                     indicator: "green"
                 });
                 load();
+                me.load_data(true);
             }).catch((err) => {
                 frappe.msgprint({
-                    title: __("Sync Failed"),
+                    title: __("Sync Error"),
                     message: err.message || String(err),
                     indicator: "red"
                 });
@@ -438,25 +467,25 @@ Object.assign(FrontDeskConsole.prototype, {
         });
 
         // Accept Booking Action
-        $tab.on("click", ".fd-btn-accept-ota", function (e) {
+        $tab.on("click", ".fd-btn-accept", function (e) {
             e.stopPropagation();
             const otaName = $(this).data("name");
             const guest = $(this).data("guest") || __("Guest");
+            const rt = $(this).data("rt") || "";
             const dates = $(this).data("dates") || "";
 
             frappe.confirm(
-                __("Accept OTA Booking for <b>{0}</b> ({1})?<br><br>This will create a formal <b>Hotel Reservation</b> in <i>Reserved</i> status ready for check-in upon arrival.", [guest, dates]),
+                __("<b>Accept OTA Booking for {0}?</b><br><br><b>Stay:</b> {1}<br><b>Room Type:</b> {2}<br><br>This will create a confirmed <b>Hotel Reservation</b> (status: <i>Reserved</i>). Upon guest arrival, front desk staff can check them in and allot their physical room with 1 click.", [guest, dates, rt]),
                 () => {
                     FD.call("hospitality_core.api.console.accept_ota_booking", {
                         ota_reservation_name: otaName
                     }, { freeze: true, freeze_message: __("Creating Hotel Reservation...") })
                     .then((r) => {
                         frappe.show_alert({
-                            message: __("Accepted! Created Reservation {0}", [r.reservation]),
+                            message: __("Accepted! Created Hotel Reservation {0}", [r.reservation]),
                             indicator: "green"
                         });
                         load();
-                        // Realtime refresh
                         me.load_data(true);
                     })
                     .catch((err) => {
@@ -470,6 +499,15 @@ Object.assign(FrontDeskConsole.prototype, {
             );
         });
 
+        // Direct Check-in Action
+        $tab.on("click", ".fd-btn-checkin-ota", function (e) {
+            e.stopPropagation();
+            const resName = $(this).data("res");
+            if (resName) {
+                me.dialog_checkin(resName);
+            }
+        });
+
         // View Reservation Dialog
         $tab.on("click", ".fd-btn-view-res", function (e) {
             e.stopPropagation();
@@ -480,8 +518,8 @@ Object.assign(FrontDeskConsole.prototype, {
         });
 
         // View Raw OTA Details
-        $tab.on("click", ".fd-btn-view-raw, .fd-ota-item-row", function (e) {
-            if ($(e.target).closest(".fd-btn-accept-ota, .fd-btn-view-res").length) return;
+        $tab.on("click", ".fd-btn-raw, .fd-ota-row", function (e) {
+            if ($(e.target).closest(".fd-btn-accept, .fd-btn-view-res, .fd-btn-checkin-ota").length) return;
             const name = $(this).data("name") || $(this).closest("tr").data("name");
             if (name) fd_open_doc_popup("OTA Reservation", name);
         });
