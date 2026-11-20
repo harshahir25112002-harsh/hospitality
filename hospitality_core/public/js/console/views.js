@@ -489,9 +489,16 @@ Object.assign(FrontDeskConsole.prototype, {
                         me.load_data(true);
                     })
                     .catch((err) => {
+                        let msg = err && err.message ? err.message : "";
+                        if (!msg && err && err._server_messages) {
+                            try {
+                                const parsed = JSON.parse(err._server_messages);
+                                msg = JSON.parse(parsed[0]).message || parsed[0];
+                            } catch (e) {}
+                        }
                         frappe.msgprint({
                             title: __("Accept Failed"),
-                            message: err.message || String(err),
+                            message: msg || (typeof err === "string" ? err : JSON.stringify(err)),
                             indicator: "red"
                         });
                     });

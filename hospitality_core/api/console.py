@@ -812,6 +812,18 @@ def create_sample_rooms():
 @frappe.whitelist()
 def get_ota_bookings(status=None, text=None, limit=100):
     require_console_access()
+    limit = min(cint(limit) or 100, 200)
+
+    # 1. Run fix on existing reservations if needed
+    try:
+        from hospitality_core.api.ota import fix_existing_ota_reservations, get_ota_room_type_map, get_ota_rate_plan_map
+        rt_map = get_ota_room_type_map()
+        rp_map = get_ota_rate_plan_map()
+        fix_existing_ota_reservations(rt_map, rp_map)
+    except Exception:
+        rt_map = {}
+        rp_map = {}
+
     filters = {}
     if status and status != "All":
         filters["status"] = status
@@ -833,7 +845,7 @@ def get_ota_bookings(status=None, text=None, limit=100):
         "adults", "children", "remarks"
     ]
 
-    return frappe.get_all(
+    rows = frappe.get_all(
         "OTA Reservation",
         filters=filters,
         or_filters=or_filters if or_filters else None,
@@ -842,6 +854,32 @@ def get_ota_bookings(status=None, text=None, limit=100):
         limit=limit
     )
 
+    # Match reservation statuses
+    res_names = [r.hotel_reservation for r in rows if r.get("hotel_reservation")]
+    res_map = {}
+    if res_names:
+        for res_row in frappe.get_all("Hotel Reservation", filters={"name": ["in", res_names]}, fields=["name", "status", "room"]):
+            res_map[res_row.name] = res_row
+
+    for r in rows:
+        rt = (r.get("room_type_name") or "").strip()
+        if len(rt) == 36 and rt in rt_map:
+            r["room_type_name"] = rt_map[rt]
+        elif len(rt) == 36:
+            r["room_type_name"] = "Demo Double"
+
+        rp = (r.get("rate_plan_name") or "").strip()
+        if len(rp) == 36 and rp in rp_map:
+            r["rate_plan_name"] = rp_map[rp]
+        elif len(rp) == 36 or not rp:
+            r["rate_plan_name"] = "Standard Rate"
+
+        if r.get("hotel_reservation") and r["hotel_reservation"] in res_map:
+            r["res_status"] = res_map[r["hotel_reservation"]].status
+            r["res_room"] = res_map[r["hotel_reservation"]].room
+
+    return rows
+
 
 @frappe.whitelist()
 def accept_ota_booking(ota_reservation_name, room_type=None):
@@ -849,8 +887,9 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
     Accepts an OTA Reservation and converts it into a formal Hotel Reservation.
     1. Creates or matches Customer.
     2. Matches Hotel Room Type.
-    3. Creates Hotel Reservation with status 'Reserved'.
-    4. Links Hotel Reservation <-> OTA Reservation.
+    3. Resolves Rate Plan safely (never passes invalid string or UUID to Link field).
+    4. Creates Hotel Reservation with status 'Reserved'.
+    5. Links Hotel Reservation <-> OTA Reservation.
     """
     require_console_access()
     from frappe.utils import cint, flt
@@ -863,21 +902,20 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
             "message": _("Booking is already converted to {0}.").format(ota.hotel_reservation)
         }
 
-    from hospitality_core.api.ota import get_ota_room_type_map
+    from hospitality_core.api.ota import get_ota_room_type_map, get_ota_rate_plan_map
     rt_map = get_ota_room_type_map()
+    rp_map = get_ota_rate_plan_map()
 
     # 1. Resolve room type human name
     target_name = (ota.room_type_name or "").strip()
     if len(target_name) == 36 and target_name in rt_map:
         target_name = rt_map[target_name]
-        ota.room_type_name = target_name
-        frappe.db.set_value("OTA Reservation", ota.name, "room_type_name", target_name)
+    elif len(target_name) == 36:
+        target_name = frappe.db.get_value("Hotel Room Type", {}, "name") or "Demo Double"
 
     chosen_type = room_type
     if not chosen_type and target_name:
-        chosen_type = frappe.db.get_value("Hotel Room Type", {"name": target_name}, "name") \
-            or frappe.db.get_value("Hotel Room Type", {"room_type_name": target_name}, "name") \
-            or frappe.db.get_value("Hotel Room Type", {"room_type_name": ["like", f"%{target_name}%"]}, "name")
+        chosen_type = frappe.db.get_value("Hotel Room Type", {"name": target_name}, "name")             or frappe.db.get_value("Hotel Room Type", {"room_type_name": target_name}, "name")             or frappe.db.get_value("Hotel Room Type", {"room_type_name": ["like", f"%{target_name}%"]}, "name")
 
     if not chosen_type:
         chosen_type = frappe.db.get_value("Hotel Room Type", {}, "name")
@@ -885,7 +923,25 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
     if not chosen_type:
         frappe.throw(_("No Hotel Room Types found. Please create or sync room types first."))
 
-    # 2. Match or Create Customer
+    # 2. Resolve Rate Plan safely for Link field (options: "Room Rate Plan")
+    valid_rate_plan = None
+    target_plan_name = (ota.rate_plan_name or "").strip()
+    if len(target_plan_name) == 36 and target_plan_name in rp_map:
+        target_plan_name = rp_map[target_plan_name]
+    elif len(target_plan_name) == 36 or not target_plan_name:
+        target_plan_name = "Standard Rate"
+
+    # Only assign rate_plan if it actually exists in tabRoom Rate Plan
+    if target_plan_name and frappe.db.exists("Room Rate Plan", target_plan_name):
+        valid_rate_plan = target_plan_name
+    elif target_plan_name and frappe.db.exists("Room Rate Plan", {"plan_name": target_plan_name}):
+        valid_rate_plan = frappe.db.get_value("Room Rate Plan", {"plan_name": target_plan_name}, "name")
+    elif chosen_type and frappe.db.exists("Room Rate Plan", {"room_type": chosen_type, "active": 1}):
+        valid_rate_plan = frappe.db.get_value("Room Rate Plan", {"room_type": chosen_type, "active": 1}, "name")
+    else:
+        valid_rate_plan = None
+
+    # 3. Match or Create Customer
     customer = None
     if ota.guest_phone:
         customer = frappe.db.get_value("Customer", {"mobile_no": ota.guest_phone, "is_hotel_guest": 1}, "name")
@@ -909,7 +965,7 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
         cust_doc.insert(ignore_permissions=True)
         customer = cust_doc.name
 
-    # 3. Create Hotel Reservation
+    # 4. Create Hotel Reservation
     company = get_company()
     nights = max(cint(ota.nights), 1)
     rate = flt(ota.total_amount / nights) if ota.total_amount and nights else 0.0
@@ -924,12 +980,12 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
         "adults": max(cint(ota.adults), 1),
         "children": cint(ota.children),
         "status": "Reserved",
-        "rate_plan": ota.rate_plan_name or "",
+        "rate_plan": valid_rate_plan,
         "ota_source": ota.channel_name or "OTA",
         "ota_booking_id": ota.ota_booking_id,
         "ota_commission": flt(ota.commission),
         "ota_reservation": ota.name,
-        "remarks": f"Booked via {ota.channel_name or 'OTA'} (Ref: {ota.ota_booking_id}). Total: {ota.currency} {ota.total_amount}.".strip(),
+        "remarks": f"Booked via {ota.channel_name or 'OTA'} (Ref: {ota.ota_booking_id}). Rate Plan: {target_plan_name}. Total: {ota.currency} {ota.total_amount}.".strip(),
         "stays": [
             {
                 "room_type": chosen_type,
@@ -944,11 +1000,12 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
     res.flags.ignore_validate_capacity = True
     res.insert(ignore_permissions=True)
 
-    # 4. Link back to OTA Reservation
+    # 5. Link back to OTA Reservation and store clean titles
     frappe.db.set_value("OTA Reservation", ota.name, {
         "hotel_reservation": res.name,
         "status": "Accepted",
-        "room_type_name": target_name
+        "room_type_name": target_name,
+        "rate_plan_name": target_plan_name
     })
     frappe.db.commit()
 
