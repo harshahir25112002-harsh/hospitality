@@ -132,6 +132,24 @@ def get_ota_rate_plan_map():
 	return rate_map
 
 
+
+def fix_hotel_room_type_capacities():
+	"""Ensures room types have realistic adult/child capacities based on their names."""
+	try:
+		for rt in frappe.get_all("Hotel Room Type", fields=["name", "room_type_name", "max_adults", "max_occupancy"]):
+			name = (rt.room_type_name or rt.name).strip()
+			lower = name.lower()
+			target_adults = 4 if ("family" in lower or "suite" in lower) else (2 if ("double" in lower or "twin" in lower or "deluxe" in lower) else 1)
+			if cint(rt.max_adults) < target_adults:
+				frappe.db.set_value("Hotel Room Type", rt.name, {
+					"max_adults": target_adults,
+					"max_occupancy": max(target_adults + 2, cint(rt.max_occupancy))
+				})
+		frappe.db.commit()
+	except Exception:
+		pass
+
+
 def fix_existing_ota_reservations(room_type_map=None, rate_plan_map=None):
 	"""Resolves any existing raw UUIDs in OTA Reservation records to human titles."""
 	try:

@@ -165,20 +165,37 @@ def fetch_room_types_from_ota():
 		for idx, item in enumerate(data):
 			attrs = item.get("attributes") or {}
 			title = (attrs.get("title") or f"Room Type {idx+1}").strip()
-			occupancy = int(attrs.get("default_occupancy") or 2)
 			count_of_rooms = int(attrs.get("count_of_rooms") or 1)
+
+			occ_adults = int(
+				attrs.get("occ_adults")
+				or attrs.get("adults")
+				or attrs.get("capacity")
+				or attrs.get("max_occupancy")
+				or (4 if "family" in title.lower() or "suite" in title.lower() else (2 if "double" in title.lower() or "twin" in title.lower() or "deluxe" in title.lower() else 1))
+			)
+			occ_children = int(attrs.get("occ_children") or attrs.get("children") or (2 if "family" in title.lower() else 1))
+			max_occ = int(attrs.get("max_occupancy") or (occ_adults + occ_children))
 
 			# Create or update Hotel Room Type
 			if not frappe.db.exists("Hotel Room Type", title):
 				doc = frappe.get_doc({
 					"doctype": "Hotel Room Type",
 					"room_type_name": title,
-					"max_adults": occupancy,
+					"max_adults": occ_adults,
+					"max_children": occ_children,
+					"max_occupancy": max_occ,
 					"item": default_item,
 					"default_rate": float(attrs.get("default_rate") or 2500.0)
 				})
 				doc.insert(ignore_permissions=True)
 				created_types.append(title)
+			else:
+				frappe.db.set_value("Hotel Room Type", title, {
+					"max_adults": occ_adults,
+					"max_children": occ_children,
+					"max_occupancy": max_occ
+				})
 
 			# Check existing rooms for this room type
 			existing_rooms = frappe.get_all(

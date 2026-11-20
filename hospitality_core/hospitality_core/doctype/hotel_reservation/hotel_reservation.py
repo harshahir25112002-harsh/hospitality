@@ -134,7 +134,11 @@ class HotelReservation(Document):
                 or getdate(old.check_out_date) != getdate(self.check_out_date))
 
     def validate_capacity(self):
-        if getattr(self.flags, "ignore_validate_capacity", False) or self.ota_reservation:
+        if (
+            getattr(self.flags, "ignore_validate_capacity", False)
+            or self.ota_reservation
+            or self.status in (ReservationStatus.CHECKED_IN, ReservationStatus.CHECKED_OUT)
+        ):
             return
         validate_guest_capacity(self.room_type, self.adults, self.children)
 
@@ -312,6 +316,8 @@ def check_in(reservation_name, room=None, guest_id_type=None, guest_id_number=No
     res.room = room
     res.status = ReservationStatus.CHECKED_IN
     res.checked_in_on = now_datetime()
+    res.flags.ignore_validate_capacity = True
+    res.flags.ignore_validate_inventory = True
     res.save()
 
     # Identity data is written outside document versioning so it never lands in Version history.
@@ -384,7 +390,8 @@ def validate_room_assignment(res, room, today=None):
         frappe.throw(_("Room {0} is Dirty and must be cleaned before check-in.").format(room), RoomUnavailable)
     if row.status == RoomStatus.RESERVED and row.current_reservation and row.current_reservation != res.name:
         frappe.throw(_("Room {0} is held for reservation {1}.").format(room, row.current_reservation), RoomUnavailable)
-    validate_guest_capacity(res.room_type, res.adults, res.children)
+    if not (res.ota_reservation or getattr(res.flags, "ignore_validate_capacity", False)):
+        validate_guest_capacity(res.room_type, res.adults, res.children)
     start = min(getdate(res.check_in_date), today)
     conflict = get_conflicting_reservation(room, start, res.check_out_date, exclude=res.name)
     if conflict:
@@ -418,8 +425,20 @@ def validate_guest_capacity(room_type, adults, children):
         frappe.throw(_("At least one adult is required."))
     if children < 0:
         frappe.throw(_("Children cannot be negative."))
-    if cint(rt.max_adults) and adults > cint(rt.max_adults):
-        frappe.throw(_("{0} allows at most {1} adults.").format(room_type, rt.max_adults))
+
+    # Inferred capacity: Double/Twin allows at least 2 adults, Family/Suite allows 4 adults
+    max_adults = cint(rt.max_adults)
+    rt_lower = room_type.lower()
+    inferred_adults = 4 if ("family" in rt_lower or "suite" in rt_lower) else (2 if ("double" in rt_lower or "twin" in rt_lower or "deluxe" in rt_lower) else 1)
+    if max_adults < inferred_adults:
+        max_adults = inferred_adults
+        try:
+            frappe.db.set_value("Hotel Room Type", room_type, "max_adults", max_adults)
+        except Exception:
+            pass
+
+    if max_adults and adults > max_adults:
+        frappe.throw(_("{0} allows at most {1} adults.").format(room_type, max_adults))
     if cint(rt.max_children) and children > cint(rt.max_children):
         frappe.throw(_("{0} allows at most {1} children.").format(room_type, rt.max_children))
     if cint(rt.max_occupancy) and adults + children > cint(rt.max_occupancy):
