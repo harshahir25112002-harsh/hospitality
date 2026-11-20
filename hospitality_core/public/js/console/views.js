@@ -193,6 +193,92 @@ Object.assign(FrontDeskConsole.prototype, {
         load();
     },
 
+
+    // ---------------- OTA BOOKINGS ----------------
+    render_ota_bookings($tab) {
+        const me = this;
+        this.ota_filters = this.ota_filters || { status: "", text: "" };
+        const f = this.ota_filters;
+        const statuses = ["", "New", "Confirmed", "Modified", "Cancelled"];
+        $tab.html(`
+            <div class="fd-toolbar">
+                <div class="fd-seg">${statuses.map((s) => `<button class="fd-seg-btn fd-ota-seg-btn ${f.status === s ? "active" : ""}" data-st="${s}">${s ? __(s) : __("All")}</button>`).join("")}</div>
+                <input class="form-control input-sm fd-ota-text" placeholder="${__("Search guest, OTA ID, channel, room...")}" value="${FD.esc(f.text)}">
+                <button class="btn btn-default btn-sm fd-ota-fetch">${FD.icon("refresh-cw")} ${__("Fetch Bookings Now")}</button>
+                <button class="btn btn-default btn-sm fd-ota-settings">${FD.icon("settings")} ${__("OTA Settings")}</button>
+            </div>
+            <div class="fd-ota-list">${FD.skeleton(4)}</div>`);
+
+        const load = () => {
+            FD.call("hospitality_core.api.console.get_ota_bookings", { status: f.status, text: f.text }).then((rows) => {
+                const $l = $tab.find(".fd-ota-list");
+                if (!rows || !rows.length) {
+                    $l.html(FD.empty(__("No OTA bookings found. Click 'Fetch Bookings Now' to check for new bookings."), "globe"));
+                    return;
+                }
+                const statusColors = {
+                    "New": "blue",
+                    "Confirmed": "green",
+                    "Modified": "yellow",
+                    "Cancelled": "red"
+                };
+                const cols = [
+                    { label: __("OTA Ref / Channel"), render: (r) => `<b>${FD.esc(r.ota_booking_id || r.name)}</b><div><span class="badge" style="font-size:10px;background:#0284c7;color:#fff">${FD.esc(r.channel_name || "OTA")}</span></div>` },
+                    { label: __("Guest"), render: (r) => `<b>${FD.esc(r.guest_name || __("OTA Guest"))}</b><div class="text-muted small">${FD.esc(r.guest_phone || r.guest_email || "")}</div>` },
+                    { label: __("Stay"), render: (r) => `${FD.date(r.check_in_date)} → ${FD.date(r.check_out_date)}<div class="text-muted small">${r.nights || 1} ${__("night(s)")}</div>` },
+                    { label: __("Room / Rate"), render: (r) => `<b>${FD.esc(r.room_type_name || "—")}</b><div class="text-muted small">${FD.esc(r.rate_plan_name || "")}</div>` },
+                    { label: __("Amount"), cls: "text-right", render: (r) => `<b>${r.currency || "INR"} ${format_currency(r.total_amount || 0)}</b><div class="text-muted small">${r.payment_status || ""}</div>` },
+                    { label: __("Status"), render: (r) => `<span class="indicator-pill ${statusColors[r.status] || "gray"}">${FD.esc(__(r.status || "New"))}</span>` },
+                    { label: __("Received"), render: (r) => `<span class="text-muted small">${r.received_at ? frappe.datetime.str_to_user(r.received_at) : "—"}</span>` },
+                ];
+                $l.html(`
+                    <div class="fd-table-wrap"><table class="fd-table">
+                        <thead><tr>${cols.map((c) => `<th class="${c.cls || ""}">${c.label}</th>`).join("")}<th></th></tr></thead>
+                        <tbody>${rows.map((r) => `
+                            <tr data-name="${FD.esc(r.name)}" class="fd-ota-row" style="cursor:pointer">
+                                ${cols.map((c) => `<td class="${c.cls || ""}">${c.render(r)}</td>`).join("")}
+                                <td class="fd-row-actions">
+                                    <button class="btn btn-default btn-xs fd-ota-view" data-name="${FD.esc(r.name)}">${FD.icon("eye")} <span>${__("View")}</span></button>
+                                </td>
+                            </tr>`).join("")}
+                        </tbody>
+                    </table></div>`);
+            });
+        };
+
+        $tab.find(".fd-ota-seg-btn").on("click", function () {
+            f.status = $(this).data("st");
+            me.render_ota_bookings($tab.empty().off());
+        });
+        $tab.find(".fd-ota-text").on("input", frappe.utils.debounce(function () {
+            f.text = $(this).val();
+            load();
+        }, 300));
+        $tab.find(".fd-ota-fetch").on("click", (e) => {
+            FD.call("hospitality_core.api.ota.pull_booking_revisions", {}, { btn: e.currentTarget, freeze: true, freeze_message: __("Fetching bookings from OTA...") })
+                .then((r) => {
+                    frappe.show_alert({
+                        message: __("Fetched {0} new/updated bookings!", [r.processed || 0]),
+                        indicator: "green"
+                    });
+                    load();
+                })
+                .catch((err) => {
+                    frappe.msgprint({ title: __("Sync Error"), message: err.message || __("Failed to fetch bookings. Check OTA Settings."), indicator: "red" });
+                });
+        });
+        $tab.find(".fd-ota-settings").on("click", () => {
+            frappe.set_route("Form", "OTA Settings");
+        });
+        $tab.on("click", ".fd-ota-row, .fd-ota-view", function (e) {
+            e.stopPropagation();
+            const name = $(this).data("name") || $(this).closest("tr").data("name");
+            if (name) fd_open_doc_popup("OTA Reservation", name);
+        });
+
+        load();
+    },
+
     // ---------------- TAPE CHART ----------------
     render_tape_chart($tab) {
         const me = this;

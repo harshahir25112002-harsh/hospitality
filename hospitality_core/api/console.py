@@ -161,7 +161,10 @@ def get_console_data(target_date=None):
     reserved_count = len([r for r in rooms if r.status == RoomStatus.RESERVED])
     occupancy_pct = flt((occupied_count / total_rooms) * 100, 1) if total_rooms > 0 else 0.0
 
+    ota_bookings_count = frappe.db.count("OTA Reservation", {"status": "New"})
+
     kpis = {
+        "ota_bookings": ota_bookings_count,
         "arrivals": len(arrivals),
         "departures": len(departures),
         "in_house": len(in_house),
@@ -188,6 +191,7 @@ def get_console_data(target_date=None):
         "room_types": sorted({r.room_type for r in rooms if r.room_type}),
         "setup_warnings": get_setup_warnings(settings, total_rooms),
         "can_setup": "System Manager" in frappe.get_roles() or frappe.session.user == "Administrator",
+        "ota_bookings_count": ota_bookings_count,
         "settings": {
             "company": company,
             "restaurant_pos_profile": settings.restaurant_pos_profile,
@@ -813,3 +817,36 @@ def create_sample_rooms():
                                 "floor": num[0], "status": "Available", "is_enabled": 1}).insert(ignore_permissions=True)
                 created.append(num)
     return {"created": created}
+
+
+@frappe.whitelist()
+def get_ota_bookings(status=None, text=None, limit=100):
+    require_console_access()
+    filters = {}
+    if status and status != "All":
+        filters["status"] = status
+
+    or_filters = []
+    if text:
+        or_filters = [
+            ["guest_name", "like", f"%{text}%"],
+            ["ota_booking_id", "like", f"%{text}%"],
+            ["channel_name", "like", f"%{text}%"],
+            ["room_type_name", "like", f"%{text}%"],
+        ]
+
+    fields = [
+        "name", "ota_booking_id", "channel_name", "status", "guest_name",
+        "guest_phone", "guest_email", "check_in_date", "check_out_date",
+        "nights", "room_type_name", "rate_plan_name", "total_amount",
+        "currency", "payment_status", "received_at"
+    ]
+
+    return frappe.get_all(
+        "OTA Reservation",
+        filters=filters,
+        or_filters=or_filters if or_filters else None,
+        fields=fields,
+        order_by="received_at desc, creation desc",
+        limit=limit
+    )

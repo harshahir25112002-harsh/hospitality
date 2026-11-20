@@ -112,3 +112,94 @@ def test_connection():
 	except requests.exceptions.ConnectionError:
 		log_ota_error("Could not connect to API server.")
 		frappe.throw(_("Could not connect to server. Check your API Base URL and internet connection."))
+
+
+@frappe.whitelist()
+def fetch_room_types_from_ota():
+	"""
+	Fetches room types from connected OTA / Channex property and creates
+	Hotel Room Type and Hotel Room records in ERPNext if they don't already exist.
+	"""
+	settings = frappe.get_single("OTA Settings")
+	if not settings.property_id:
+		frappe.throw(_("Please select a Property in OTA Settings first."))
+
+	headers = get_api_headers()
+	url = get_api_url("room_types")
+	params = {"filter[property_id]": settings.property_id}
+
+	hotel_settings = frappe.get_single("Hotel Settings")
+	default_item = hotel_settings.default_room_item
+	if not default_item:
+		default_item = "HOTEL-ROOM-NIGHT"
+		if not frappe.db.exists("Item", default_item):
+			frappe.get_doc({
+				"doctype": "Item",
+				"item_code": default_item,
+				"item_name": "Room Night",
+				"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups",
+				"is_stock_item": 0,
+				"stock_uom": "Nos",
+			}).insert(ignore_permissions=True)
+		hotel_settings.default_room_item = default_item
+		hotel_settings.save(ignore_permissions=True)
+
+	try:
+		resp = requests.get(url, headers=headers, params=params, timeout=15)
+		if resp.status_code not in (200, 201):
+			frappe.throw(_("Failed to fetch room types: HTTP {0} - {1}").format(resp.status_code, resp.text[:200]))
+
+		data = resp.json().get("data", [])
+		if not data:
+			return {
+				"status": "info",
+				"message": _("No room types found for this property in OTA. You can click 'Create sample rooms' on Front Desk Console instead.")
+			}
+
+		created_types = []
+		created_rooms = []
+
+		for idx, item in enumerate(data):
+			attrs = item.get("attributes") or {}
+			title = (attrs.get("title") or f"Room Type {idx+1}").strip()
+			occupancy = int(attrs.get("default_occupancy") or 2)
+			count_of_rooms = int(attrs.get("count_of_rooms") or 1)
+
+			# Create Hotel Room Type if not exists
+			if not frappe.db.exists("Hotel Room Type", title):
+				doc = frappe.get_doc({
+					"doctype": "Hotel Room Type",
+					"room_type_name": title,
+					"max_adults": occupancy,
+					"item": default_item,
+					"default_rate": float(attrs.get("default_rate") or 2500.0)
+				})
+				doc.insert(ignore_permissions=True)
+				created_types.append(title)
+
+			# Create physical rooms if needed
+			base_num = (idx + 1) * 100
+			for r_idx in range(1, count_of_rooms + 1):
+				room_num = str(base_num + r_idx)
+				if not frappe.db.exists("Hotel Room", room_num):
+					room_doc = frappe.get_doc({
+						"doctype": "Hotel Room",
+						"room_number": room_num,
+						"room_type": title,
+						"floor": str(idx + 1),
+						"status": "Available",
+						"is_enabled": 1
+					})
+					room_doc.insert(ignore_permissions=True)
+					created_rooms.append(room_num)
+
+		frappe.db.commit()
+		return {
+			"status": "success",
+			"message": _("Synced {0} Room Types and created {1} Rooms.").format(len(data), len(created_rooms)),
+			"types_count": len(data),
+			"rooms_count": len(created_rooms)
+		}
+	except Exception as e:
+		log_ota_error(str(e))
+		frappe.throw(_("Error fetching room types: {0}").format(str(e)))

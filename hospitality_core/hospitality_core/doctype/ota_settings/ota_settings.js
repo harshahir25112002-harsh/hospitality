@@ -60,6 +60,25 @@ frappe.ui.form.on("OTA Settings", {
 				});
 			}).addClass("btn-primary");
 
+			
+			// Fetch Rooms from OTA button
+			frm.add_custom_button(__("Fetch Rooms from OTA"), () => {
+				frappe.call({
+					method: "hospitality_core.hospitality_core.doctype.ota_settings.ota_settings.fetch_room_types_from_ota",
+					freeze: true,
+					freeze_message: __("Fetching room types and rooms from OTA..."),
+					callback: (r) => {
+						if (r.message && r.message.status === "success") {
+							frappe.msgprint({
+								title: __("Rooms Fetched"),
+								indicator: "green",
+								message: r.message.message
+							});
+						}
+					}
+				});
+			});
+
 			// Fetch Bookings Now button
 			frm.add_custom_button(__("Fetch Bookings Now"), () => {
 				frappe.call({
