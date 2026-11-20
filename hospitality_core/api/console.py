@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate, nowdate, now_datetime, add_days, date_diff
+from frappe.utils import cint, flt, getdate, nowdate, now_datetime, add_days, date_diff
 from hospitality_core.constants import RoomStatus, ReservationStatus
 from hospitality_core.utils import get_settings, get_company
 from hospitality_core.room_status import set_room_status
