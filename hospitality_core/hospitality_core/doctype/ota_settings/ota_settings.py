@@ -8,14 +8,25 @@ from frappe.utils import now_datetime
 class OTASettings(Document):
 
 	def validate(self):
-		if self.enabled and not self.api_base_url:
+		if self.enabled and not self.get("api_base_url"):
 			frappe.throw(_("API Base URL is required."))
-		if self.api_base_url:
-			self.api_base_url = self.api_base_url.strip().rstrip("/")
-		if not self.feed_endpoint:
+		if self.get("api_base_url"):
+			self.api_base_url = str(self.api_base_url).strip().rstrip("/")
+		if not self.get("feed_endpoint"):
 			self.feed_endpoint = "booking_revisions/feed"
-		if not self.pull_interval_minutes:
+		if not self.get("pull_interval_minutes"):
 			self.pull_interval_minutes = 15
+
+	@property
+	def environment(self):
+		return None
+
+	# Fallbacks in case old code/client calls these
+	def set_api_url(self):
+		pass
+
+	def set_webhook_url(self):
+		pass
 
 
 def get_ota_settings():

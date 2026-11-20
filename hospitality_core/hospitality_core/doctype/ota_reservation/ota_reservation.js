@@ -3,3 +3,4 @@ frappe.ui.form.on("OTA Reservation", {
 		// Custom actions if needed
 	}
 });
+

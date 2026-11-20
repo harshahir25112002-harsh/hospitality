@@ -10,3 +10,4 @@ frappe.listview_settings["OTA Reservation"] = {
 		return [__(doc.status), colors[doc.status] || "grey", "status,=," + doc.status];
 	}
 };
+

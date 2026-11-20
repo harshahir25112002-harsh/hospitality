@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"FD_HDR\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Front Desk &amp; Quick Actions</span>\",\"col\":12}},{\"id\":\"AFikpVG8G_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Front Desk Console\",\"col\":4}},{\"id\":\"LmjeZv2AcL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tape Chart\",\"col\":4}},{\"id\":\"is7sVl6bVG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Availability Tool\",\"col\":4}},{\"id\":\"hk_short\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Housekeeping View\",\"col\":4}},{\"id\":\"res_short\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Hotel Reservation\",\"col\":4}},{\"id\":\"room_short\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Hotel Room\",\"col\":4}},{\"id\":\"settings_short\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Hotel Settings\",\"col\":4}},{\"id\":\"ota_res_short\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OTA Reservation\",\"col\":4}},{\"id\":\"frontdesk_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Front Desk Operations\",\"col\":4}},{\"id\":\"reports_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"id\":\"billing_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Billing & Maintenance\",\"col\":4}}]",
+ "content": "[{\"id\": \"FD_HDR\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Front Desk &amp; Quick Actions</span>\", \"col\": 12}}, {\"id\": \"AFikpVG8G_\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Front Desk Console\", \"col\": 3}}, {\"id\": \"ota_res_short\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"OTA Reservation\", \"col\": 3}}, {\"id\": \"res_short\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Hotel Reservation\", \"col\": 3}}, {\"id\": \"LmjeZv2AcL\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tape Chart\", \"col\": 3}}, {\"id\": \"is7sVl6bVG\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Availability Tool\", \"col\": 3}}, {\"id\": \"hk_short\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Housekeeping View\", \"col\": 3}}, {\"id\": \"room_short\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Hotel Room\", \"col\": 3}}, {\"id\": \"settings_short\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Hotel Settings\", \"col\": 3}}, {\"id\": \"ota_settings_short\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"OTA Settings\", \"col\": 3}}, {\"id\": \"frontdesk_card\", \"type\": \"card\", \"data\": {\"card_name\": \"Front Desk Operations\", \"col\": 4}}, {\"id\": \"reports_card\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}, {\"id\": \"billing_card\", \"type\": \"card\", \"data\": {\"card_name\": \"Billing & Maintenance\", \"col\": 4}}]",
  "creation": "2026-01-17 20:44:38.076236",
  "custom_blocks": [],
  "docstatus": 0,
@@ -27,6 +27,16 @@
    "label": "Hotel Reservation",
    "link_count": 0,
    "link_to": "Hotel Reservation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "OTA Reservation",
+   "link_count": 0,
+   "link_to": "OTA Reservation",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -187,16 +197,6 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "OTA Reservation",
-   "link_count": 0,
-   "link_to": "OTA Reservation",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
   }
  ],
  "modified": "2026-11-05 02:00:00.000000",
@@ -212,11 +212,25 @@
  "sequence_id": 1.0,
  "shortcuts": [
   {
+   "color": "Blue",
+   "doc_view": "List",
+   "label": "OTA Reservation",
+   "link_to": "OTA Reservation",
+   "type": "DocType"
+  },
+  {
    "color": "Grey",
    "doc_view": "List",
    "label": "Front Desk Console",
    "link_to": "front-desk-console",
    "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Hotel Reservation",
+   "link_to": "Hotel Reservation",
+   "type": "DocType"
   },
   {
    "color": "Grey",
@@ -242,13 +256,6 @@
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Hotel Reservation",
-   "link_to": "Hotel Reservation",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
    "label": "Hotel Room",
    "link_to": "Hotel Room",
    "type": "DocType"
@@ -265,13 +272,6 @@
    "doc_view": "List",
    "label": "OTA Settings",
    "link_to": "OTA Settings",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "OTA Reservation",
-   "link_to": "OTA Reservation",
    "type": "DocType"
   }
  ],
