@@ -3,10 +3,13 @@ import requests
 import frappe
 from frappe import _
 from frappe.utils import (
+	add_days,
 	cint,
 	date_diff,
 	flt,
+	getdate,
 	now_datetime,
+	nowdate,
 )
 
 from hospitality_core.hospitality_core.doctype.ota_settings.ota_settings import (
@@ -415,3 +418,135 @@ def acknowledge_revision(revision_id):
 		return resp.status_code in (200, 204)
 	except Exception:
 		return False
+
+
+# ---------------------------------------------------------------- 2-Way OTA Availability & Restrictions Push
+@frappe.whitelist()
+def sync_push_inventory(days=30):
+	"""
+	Pushes real-time room availability and stop-sell flags from ERPNext to Channex.
+	Synchronizes all active room types for the next `days` (default: 30 days).
+	Eliminates overbooking by closing OTA channels when rooms are sold locally.
+	"""
+	settings = get_ota_settings()
+	if not settings.enabled or not settings.property_id:
+		return {"status": "skipped", "message": "OTA synchronization is disabled or property is not set"}
+
+	days = min(cint(days) or 30, 60)
+	room_types = frappe.get_all("Hotel Room Type", fields=["name", "room_type_name"])
+	if not room_types:
+		return {"status": "skipped", "message": "No Hotel Room Types found"}
+
+	rt_map = get_ota_room_type_map()
+	# Reverse map: human room type title -> Channex room_type_id (UUID)
+	title_to_uuid = {}
+	for uuid, title in rt_map.items():
+		title_to_uuid[title.lower()] = uuid
+
+	headers = get_api_headers()
+	url = get_api_url("restrictions")
+
+	start_d = getdate(nowdate())
+	total_entries = 0
+	pushed_types = []
+
+	from hospitality_core.hospitality_core.doctype.hotel_reservation.hotel_reservation import get_room_type_availability
+
+	values = []
+	for rt in room_types:
+		rt_title = (rt.room_type_name or rt.name).strip()
+		channex_uuid = title_to_uuid.get(rt_title.lower()) or title_to_uuid.get(rt.name.lower())
+		if not channex_uuid:
+			continue
+
+		pushed_types.append(rt_title)
+		for i in range(days):
+			d = add_days(start_d, i)
+			next_d = add_days(d, 1)
+			avail_info = get_room_type_availability(rt.name, d, next_d)
+			free_count = max(cint(avail_info.get("available", 0)), 0)
+			is_stop_sell = (free_count <= 0)
+
+			values.append({
+				"property_id": settings.property_id,
+				"room_type_id": channex_uuid,
+				"date_from": str(d),
+				"date_to": str(d),
+				"availability": free_count,
+				"stop_sell": is_stop_sell
+			})
+			total_entries += 1
+
+	if not values:
+		return {
+			"status": "info",
+			"message": _("No matching Channex room types found to push. Check OTA Settings.")
+		}
+
+	# Send in batches of 100 to Channex
+	success_count = 0
+	batch_size = 100
+	for i in range(0, len(values), batch_size):
+		batch = values[i:i + batch_size]
+		try:
+			resp = requests.post(url, headers=headers, json={"values": batch}, timeout=25)
+			if resp.status_code in (200, 201, 204):
+				success_count += len(batch)
+			else:
+				log_ota_error(f"Push Inventory failed: HTTP {resp.status_code} - {resp.text[:300]}")
+		except Exception as e:
+			log_ota_error(f"Push Inventory error: {str(e)}")
+
+	return {
+		"status": "success",
+		"message": _("Pushed real-time inventory to Channex for {0} room type(s) across {1} days ({2} updates sent).").format(
+			len(pushed_types), days, success_count
+		),
+		"room_types": pushed_types,
+		"updates_sent": success_count
+	}
+
+
+def push_room_type_availability_to_ota(room_type, from_date, to_date):
+	"""
+	Automatically updates Channex availability for a specific room type and date range
+	whenever a reservation is created, checked in, checked out, or cancelled in ERPNext.
+	"""
+	try:
+		settings = get_ota_settings()
+		if not settings.enabled or not settings.property_id:
+			return
+
+		rt_map = get_ota_room_type_map()
+		title_to_uuid = {t.lower(): u for u, t in rt_map.items()}
+
+		channex_uuid = title_to_uuid.get(room_type.lower())
+		if not channex_uuid:
+			return
+
+		start_d = getdate(from_date)
+		end_d = getdate(to_date)
+		num_days = max(date_diff(end_d, start_d), 1)
+
+		from hospitality_core.hospitality_core.doctype.hotel_reservation.hotel_reservation import get_room_type_availability
+		values = []
+		for i in range(num_days):
+			d = add_days(start_d, i)
+			avail = get_room_type_availability(room_type, d, add_days(d, 1))
+			free_count = max(cint(avail.get("available", 0)), 0)
+			values.append({
+				"property_id": settings.property_id,
+				"room_type_id": channex_uuid,
+				"date_from": str(d),
+				"date_to": str(d),
+				"availability": free_count,
+				"stop_sell": (free_count <= 0)
+			})
+
+		if values:
+			headers = get_api_headers()
+			url = get_api_url("restrictions")
+			requests.post(url, headers=headers, json={"values": values}, timeout=15)
+	except Exception:
+		pass
+

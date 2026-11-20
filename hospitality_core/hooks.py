@@ -58,6 +58,7 @@ scheduler_events = {
         ]
     },
     "daily": [
-        "hospitality_core.hospitality_core.doctype.hotel_reservation.hotel_reservation.mark_todays_arrivals"
+        "hospitality_core.hospitality_core.doctype.hotel_reservation.hotel_reservation.mark_todays_arrivals",
+        "hospitality_core.api.audit.run_night_audit"
     ]
 }

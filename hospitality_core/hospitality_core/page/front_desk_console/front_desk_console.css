@@ -539,3 +539,78 @@ body.fd-no-scroll { overflow: hidden; }
     gap: 5px;
     justify-content: flex-end;
 }
+
+/* ---------- 2-Way Sync, WhatsApp Concierge & Night Audit Styling ---------- */
+.fd-btn-night-audit {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+.fd-btn-night-audit:hover {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+.fd-btn-night-audit .icon {
+    width: 14px;
+    height: 14px;
+    color: #6366f1;
+}
+
+.fd-ota-push-inv {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    color: #0284c7 !important;
+    border-color: #bae6fd !important;
+    background: #f0f9ff !important;
+}
+.fd-ota-push-inv:hover {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+}
+
+.fd-btn-wa {
+    background: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+    color: #15803d !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+    padding: 3px 8px !important;
+}
+.fd-btn-wa:hover {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+}
+
+.fd-wa-msg-type {
+    display: flex;
+    gap: 6px;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 8px;
+}
+.fd-wa-msg-type .fd-seg-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.fd-wa-msg-type .fd-seg-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+

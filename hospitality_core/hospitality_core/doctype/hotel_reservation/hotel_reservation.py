@@ -113,6 +113,13 @@ class HotelReservation(Document):
                 except Exception:
                     pass
 
+        # 2-Way Push to OTA
+        try:
+            from hospitality_core.api.ota import push_room_type_availability_to_ota
+            push_room_type_availability_to_ota(self.room_type, self.check_in_date, self.check_out_date)
+        except Exception:
+            pass
+
     def on_trash(self):
         if self.room:
             try:
@@ -121,6 +128,13 @@ class HotelReservation(Document):
                     set_room_status(self.room, RoomStatus.AVAILABLE, reason=f"Reservation {self.name} deleted")
             except Exception:
                 pass
+
+        # 2-Way Push to OTA
+        try:
+            from hospitality_core.api.ota import push_room_type_availability_to_ota
+            push_room_type_availability_to_ota(self.room_type, self.check_in_date, self.check_out_date)
+        except Exception:
+            pass
 
     def _stay_changed(self):
         """New booking, re-activated booking, or a change of room type / dates."""

@@ -568,4 +568,161 @@ Object.assign(FrontDeskConsole.prototype, {
             d.show();
         });
     },
+
+    // ---------------- WHATSAPP CONCIERGE & PRE-CHECK-IN ----------------
+    dialog_whatsapp(resName, otaName) {
+        const me = this;
+        FD.call("hospitality_core.api.guest.get_whatsapp_links", {
+            reservation_name: resName || null,
+            ota_reservation_name: otaName || null
+        }, { freeze: true, freeze_message: __("Preparing WhatsApp Concierge...") }).then((data) => {
+            if (!data) return;
+
+            const msgs = data.messages || {};
+            let activeType = "welcome";
+
+            const d = new frappe.ui.Dialog({
+                title: __("WhatsApp Guest Concierge · {0}", [data.guest_name || __("Guest")]),
+                size: "large",
+                fields: [
+                    {
+                        fieldtype: "HTML",
+                        fieldname: "wa_header",
+                        options: `
+                            <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:12px 16px;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+                                <div>
+                                    <div style="font-weight:700;color:#15803d;font-size:14px;">💬 WhatsApp Direct Guest Concierge</div>
+                                    <div style="font-size:12px;color:#166534;">Guest Mobile: <b>${FD.esc(data.guest_phone || __("Not set"))}</b></div>
+                                </div>
+                                ${data.precheckin_url ? `
+                                    <a href="${FD.esc(data.precheckin_url)}" target="_blank" class="btn btn-default btn-xs" style="font-weight:600;">
+                                        ${FD.icon("external-link")} <span>${__("Preview Web Portal")}</span>
+                                    </a>
+                                ` : ""}
+                            </div>
+                            <div class="fd-seg fd-wa-msg-type" style="margin-bottom:14px;">
+                                <button type="button" class="fd-seg-btn active" data-type="welcome">⚡ ${__("1-Min Pre-Check-in Link")}</button>
+                                <button type="button" class="fd-seg-btn" data-type="wifi">📶 ${__("WiFi & Digital Pass")}</button>
+                                <button type="button" class="fd-seg-btn" data-type="bill">🧾 ${__("Folio & Checkout Bill")}</button>
+                            </div>
+                        `
+                    },
+                    {
+                        fieldtype: "Small Text",
+                        fieldname: "msg_content",
+                        label: __("Message Text (Editable)"),
+                        default: msgs.welcome ? msgs.welcome.text : ""
+                    }
+                ],
+                primary_action_label: __("Open in WhatsApp 📱"),
+                primary_action() {
+                    const text = d.get_value("msg_content") || "";
+                    const phone = data.clean_phone || "";
+                    const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+                    window.open(url, "_blank");
+                }
+            });
+
+            d.set_secondary_action_label(__("Copy Message & Link 📋"));
+            d.set_secondary_action(() => {
+                const text = d.get_value("msg_content") || "";
+                navigator.clipboard.writeText(text).then(() => {
+                    frappe.show_alert({ message: __("Copied message & link to clipboard!"), indicator: "green" });
+                });
+            });
+
+            d.show();
+
+            d.$wrapper.find(".fd-wa-msg-type .fd-seg-btn").on("click", function () {
+                d.$wrapper.find(".fd-wa-msg-type .fd-seg-btn").removeClass("active");
+                $(this).addClass("active");
+                activeType = $(this).data("type");
+                if (msgs[activeType]) {
+                    d.set_value("msg_content", msgs[activeType].text);
+                }
+            });
+        }).catch((err) => {
+            frappe.msgprint({ title: __("Error"), message: err.message || String(err), indicator: "red" });
+        });
+    },
+
+    // ---------------- DAILY NIGHT AUDIT ----------------
+    dialog_night_audit() {
+        const me = this;
+        FD.call("hospitality_core.api.audit.get_night_audit_summary", {}, {
+            freeze: true,
+            freeze_message: __("Calculating Night Audit metrics...")
+        }).then((data) => {
+            if (!data) return;
+
+            const sym = data.currency_symbol || "£";
+
+            const d = new frappe.ui.Dialog({
+                title: __("Daily Night Audit & Owner Summary · {0}", [data.audit_date]),
+                size: "large",
+                fields: [
+                    {
+                        fieldtype: "HTML",
+                        fieldname: "kpi_area",
+                        options: `
+                            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+                                <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:10px;text-align:center;">
+                                    <div style="font-size:22px;font-weight:800;color:#1e40af;">${data.occupancy_pct}%</div>
+                                    <div style="font-size:11px;font-weight:600;color:#3b82f6;text-transform:uppercase;">${__("Occupancy")} (${data.occupied_rooms}/${data.total_rooms})</div>
+                                </div>
+                                <div style="background:#ecfdf5;border:1px solid #a7f3d0;padding:12px;border-radius:10px;text-align:center;">
+                                    <div style="font-size:22px;font-weight:800;color:#065f46;">${sym} ${flt(data.total_revenue).toFixed(2)}</div>
+                                    <div style="font-size:11px;font-weight:600;color:#059669;text-transform:uppercase;">${__("Total Revenue")}</div>
+                                </div>
+                                <div style="background:#fefce8;border:1px solid #fde047;padding:12px;border-radius:10px;text-align:center;">
+                                    <div style="font-size:22px;font-weight:800;color:#854d0e;">${sym} ${flt(data.adr).toFixed(2)}</div>
+                                    <div style="font-size:11px;font-weight:600;color:#ca8a04;text-transform:uppercase;">${__("ADR (Avg Rate)")}</div>
+                                </div>
+                                <div style="background:#faf5ff;border:1px solid #e9d5ff;padding:12px;border-radius:10px;text-align:center;">
+                                    <div style="font-size:22px;font-weight:800;color:#6b21a8;">${sym} ${flt(data.revpar).toFixed(2)}</div>
+                                    <div style="font-size:11px;font-weight:600;color:#9333ea;text-transform:uppercase;">${__("RevPAR")}</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:12px;background:#f8fafc;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:12px;">
+                                <span><b>${__("In-House:")}</b> ${data.in_house_count}</span> · 
+                                <span><b>${__("Arrivals:")}</b> ${data.arrivals_today}</span> · 
+                                <span><b>${__("Departures:")}</b> ${data.departures_today}</span> · 
+                                <span><b>${__("Available Rooms:")}</b> ${data.available_rooms}</span> · 
+                                <span><b>${__("Dirty Turnover:")}</b> ${data.dirty_rooms}</span>
+                            </div>
+                        `
+                    },
+                    {
+                        fieldtype: "Small Text",
+                        fieldname: "report_preview",
+                        label: __("WhatsApp Executive Briefing (Ready to Send)"),
+                        default: data.whatsapp_text || ""
+                    }
+                ],
+                primary_action_label: __("Send WhatsApp to Owner 📱"),
+                primary_action() {
+                    const text = d.get_value("report_preview") || data.whatsapp_text;
+                    const phone = data.owner_phone ? String(data.owner_phone).replace(/[^0-9]/g, "") : "";
+                    const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+                    window.open(url, "_blank");
+                }
+            });
+
+            d.set_secondary_action_label(__("Run & Commit Audit ✅"));
+            d.set_secondary_action(() => {
+                FD.call("hospitality_core.api.audit.run_night_audit", { audit_date: data.audit_date }, {
+                    freeze: true,
+                    freeze_message: __("Posting Night Audit & logging to system...")
+                }).then((r) => {
+                    frappe.show_alert({ message: r.message || __("Audit completed!"), indicator: "green" });
+                    d.hide();
+                    me.load_data(true);
+                });
+            });
+
+            d.show();
+        }).catch((err) => {
+            frappe.msgprint({ title: __("Night Audit Error"), message: err.message || String(err), indicator: "red" });
+        });
+    },
 });

@@ -133,7 +133,7 @@ Object.assign(FrontDeskConsole.prototype, {
             { label: __("Status"), render: (r) => FD.pill(r.status) },
             { label: __("Paid"), cls: "text-right", render: (r) => FD.money(r.total_paid) },
         ], () => b("checkin", __("Check In"), "btn-primary") + b("view", __("View")) + b("cancel", __("Cancel"), "btn-danger-light"),
-        __("No arrivals expected on {0}", [FD.date(this.current_date)]));
+            __("No arrivals expected on {0}", [FD.date(this.current_date)]));
         this.bind_row_actions($tab);
     },
 
@@ -144,7 +144,7 @@ Object.assign(FrontDeskConsole.prototype, {
             { label: __("Room Service"), cls: "text-right", render: (r) => r.room_service_pending > 0 ? `<span class="text-warning">${FD.money(r.room_service_pending)}</span>` : "—" },
             { label: __("Balance"), cls: "text-right", render: (r) => r.balance > 0 ? `<b class="text-danger">${FD.money(r.balance)}</b>` : `<span class="text-success">${FD.money(r.balance)}</span>` },
         ], () => b("pay", __("Payment"), "btn-primary") + b("pos", __("Room Order")) + b("move", __("Move")) + b("extend", __("Extend")) + b("bill", __("Bill")) + b("checkout", __("Check Out"), "btn-dark"),
-        __("No guests are currently checked in."));
+            __("No guests are currently checked in."));
         this.bind_row_actions($tab);
     },
 
@@ -155,7 +155,7 @@ Object.assign(FrontDeskConsole.prototype, {
             { label: __("Payment"), render: (r) => r.balance > 0 ? `<span class="indicator-pill red">${__("Due")} ${FD.money(r.balance)}</span>` : `<span class="indicator-pill green">${__("Settled")}</span>` },
             { label: __("Status"), render: (r) => FD.pill(r.status) },
         ], () => b("bill", __("Bill Preview")) + b("pay", __("Payment")) + b("checkout", __("Check Out"), "btn-dark"),
-        __("No departures due on {0}", [FD.date(this.current_date)]));
+            __("No departures due on {0}", [FD.date(this.current_date)]));
         this.bind_row_actions($tab);
     },
 
@@ -194,8 +194,8 @@ Object.assign(FrontDeskConsole.prototype, {
     },
 
 
-    
-    
+
+
     // ---------------- OTA BOOKINGS (POLISHED ENTERPRISE UI/UX) ----------------
     render_ota_bookings($tab) {
         const me = this;
@@ -290,6 +290,9 @@ Object.assign(FrontDeskConsole.prototype, {
                         <button class="btn btn-default btn-sm fd-ota-fetch">
                             ${FD.icon("refresh-cw")} <span>${__("Fetch Now")}</span>
                         </button>
+                        <button class="btn btn-default btn-sm fd-ota-push-inv" title="${__("Push Live Room Availability to Channex OTAs")}">
+                            ${FD.icon("upload-cloud")} <span>${__("Push to OTA")}</span>
+                        </button>
                         <button class="btn btn-default btn-sm fd-ota-settings" title="${__("OTA Settings")}">
                             ${FD.icon("settings")}
                         </button>
@@ -341,24 +344,24 @@ Object.assign(FrontDeskConsole.prototype, {
                             </thead>
                             <tbody>
                                 ${rows.map((r) => {
-                                    const isAccepted = !!r.hotel_reservation || r.status === "Accepted";
-                                    let statusHtml = "";
-                                    if (isAccepted) {
-                                        if (r.res_status === "Checked In") {
-                                            statusHtml = `<span class="fd-pill-status in-house"><span class="fd-dot green"></span>${__("In-House")}</span>`;
-                                        } else {
-                                            statusHtml = `<span class="fd-pill-status accepted"><span class="fd-dot green"></span>${__("Accepted")}</span>`;
-                                        }
-                                    } else if (r.status === "Cancelled") {
-                                        statusHtml = `<span class="fd-pill-status cancelled">${__("Cancelled")}</span>`;
-                                    } else {
-                                        statusHtml = `<span class="fd-pill-status pending"><span class="fd-dot orange"></span>${__("Needs Acceptance")}</span>`;
-                                    }
+                    const isAccepted = !!r.hotel_reservation || r.status === "Accepted";
+                    let statusHtml = "";
+                    if (isAccepted) {
+                        if (r.res_status === "Checked In") {
+                            statusHtml = `<span class="fd-pill-status in-house"><span class="fd-dot green"></span>${__("In-House")}</span>`;
+                        } else {
+                            statusHtml = `<span class="fd-pill-status accepted"><span class="fd-dot green"></span>${__("Accepted")}</span>`;
+                        }
+                    } else if (r.status === "Cancelled") {
+                        statusHtml = `<span class="fd-pill-status cancelled">${__("Cancelled")}</span>`;
+                    } else {
+                        statusHtml = `<span class="fd-pill-status pending"><span class="fd-dot orange"></span>${__("Needs Acceptance")}</span>`;
+                    }
 
-                                    // Guest Initials
-                                    const initials = (r.guest_name || "G").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+                    // Guest Initials
+                    const initials = (r.guest_name || "G").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
 
-                                    return `
+                    return `
                                         <tr data-name="${FD.esc(r.name)}" data-res="${FD.esc(r.hotel_reservation || "")}" class="fd-ota-row">
                                             <td>
                                                 <div class="fd-ota-ref-col">
@@ -412,13 +415,16 @@ Object.assign(FrontDeskConsole.prototype, {
                                                         ${FD.icon("check")} <span>${__("Accept Booking")}</span>
                                                     </button>
                                                 ` : "")}
+                                                <button class="btn btn-default btn-xs fd-btn-wa" data-name="${FD.esc(r.name)}" data-res="${FD.esc(r.hotel_reservation || '')}" title="${__("WhatsApp Guest & Pre-Checkin Link")}">
+                                                    <span style="color:#16a34a;font-weight:800;">WA</span>
+                                                </button>
                                                 <button class="btn btn-default btn-xs fd-btn-raw" data-name="${FD.esc(r.name)}" title="${__("View Raw Details")}">
                                                     ${FD.icon("eye")}
                                                 </button>
                                             </td>
                                         </tr>
                                     `;
-                                }).join("")}
+                }).join("")}
                             </tbody>
                         </table>
                     </div>
@@ -438,6 +444,39 @@ Object.assign(FrontDeskConsole.prototype, {
             f.text = $(this).val();
             load();
         }, 250));
+
+        // Push to OTA button (2-Way Instant Sync)
+        $tab.find(".fd-ota-push-inv").on("click", (e) => {
+            frappe.confirm(
+                __("<b>Push Live Inventory to Channex OTAs?</b><br><br>This will calculate remaining free rooms for all room types across the next 30 days and update Channex/Booking.com/Airbnb in real-time to prevent overbooking."),
+                () => {
+                    FD.call("hospitality_core.api.ota.sync_push_inventory", {}, {
+                        btn: e.currentTarget,
+                        freeze: true,
+                        freeze_message: __("Pushing live inventory to Channex...")
+                    }).then((r) => {
+                        frappe.show_alert({
+                            message: r.message || __("Inventory pushed to OTAs!"),
+                            indicator: "green"
+                        });
+                    }).catch((err) => {
+                        frappe.msgprint({
+                            title: __("Push Failed"),
+                            message: err.message || String(err),
+                            indicator: "red"
+                        });
+                    });
+                }
+            );
+        });
+
+        // WhatsApp Guest Action
+        $tab.on("click", ".fd-btn-wa", function (e) {
+            e.stopPropagation();
+            const otaName = $(this).data("name");
+            const resName = $(this).data("res");
+            me.dialog_whatsapp(resName, otaName);
+        });
 
         // Fetch Now button
         $tab.find(".fd-ota-fetch").on("click", (e) => {
@@ -480,28 +519,28 @@ Object.assign(FrontDeskConsole.prototype, {
                     FD.call("hospitality_core.api.console.accept_ota_booking", {
                         ota_reservation_name: otaName
                     }, { freeze: true, freeze_message: __("Creating Hotel Reservation...") })
-                    .then((r) => {
-                        frappe.show_alert({
-                            message: __("Accepted! Created Hotel Reservation {0}", [r.reservation]),
-                            indicator: "green"
+                        .then((r) => {
+                            frappe.show_alert({
+                                message: __("Accepted! Created Hotel Reservation {0}", [r.reservation]),
+                                indicator: "green"
+                            });
+                            load();
+                            me.load_data(true);
+                        })
+                        .catch((err) => {
+                            let msg = err && err.message ? err.message : "";
+                            if (!msg && err && err._server_messages) {
+                                try {
+                                    const parsed = JSON.parse(err._server_messages);
+                                    msg = JSON.parse(parsed[0]).message || parsed[0];
+                                } catch (e) { }
+                            }
+                            frappe.msgprint({
+                                title: __("Accept Failed"),
+                                message: msg || (typeof err === "string" ? err : JSON.stringify(err)),
+                                indicator: "red"
+                            });
                         });
-                        load();
-                        me.load_data(true);
-                    })
-                    .catch((err) => {
-                        let msg = err && err.message ? err.message : "";
-                        if (!msg && err && err._server_messages) {
-                            try {
-                                const parsed = JSON.parse(err._server_messages);
-                                msg = JSON.parse(parsed[0]).message || parsed[0];
-                            } catch (e) {}
-                        }
-                        frappe.msgprint({
-                            title: __("Accept Failed"),
-                            message: msg || (typeof err === "string" ? err : JSON.stringify(err)),
-                            indicator: "red"
-                        });
-                    });
                 }
             );
         });
@@ -607,7 +646,7 @@ Object.assign(FrontDeskConsole.prototype, {
         $tab.html(`
             <div class="fd-toolbar">
                 <div class="fd-seg">${["Dirty", "Available", "Occupied", "Out of Order", ""].map((st) =>
-                    `<button class="fd-seg-btn ${f.status === st ? "active" : ""}" data-st="${st}">${st ? __(st) : __("All")}</button>`).join("")}</div>
+            `<button class="fd-seg-btn ${f.status === st ? "active" : ""}" data-st="${st}">${st ? __(st) : __("All")}</button>`).join("")}</div>
                 <select class="form-control input-sm fd-hk-floor" style="max-width:150px"><option value="">${__("All Floors")}</option>
                     ${(s.floors || []).map((fl) => `<option ${String(fl) === String(f.floor) ? "selected" : ""}>${FD.esc(fl)}</option>`).join("")}</select>
                 <input class="form-control input-sm fd-hk-text" placeholder="${__("Room number")}" value="${FD.esc(f.text)}">
@@ -711,7 +750,7 @@ Object.assign(FrontDeskConsole.prototype, {
                             <div class="fd-av-rooms">${g.rooms.length ? g.rooms.map((r) => `
                                 <button class="fd-av-room" data-room="${FD.esc(r.name)}" data-type="${FD.esc(g.type)}">${FD.esc(r.room_number || r.name)}
                                     <small>${r.floor ? __("Floor") + " " + FD.esc(r.floor) : ""}</small></button>`).join("")
-                                : `<span class="text-muted">${__("Sold out for these dates")}</span>`}</div>
+                            : `<span class="text-muted">${__("Sold out for these dates")}</span>`}</div>
                         </div>`).join(""));
                     $r.find(".fd-av-room").on("click", function () {
                         me.dialog_new_reservation($(this).data("room"), $(this).data("type"), a.from, a.to);

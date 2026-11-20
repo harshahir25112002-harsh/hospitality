@@ -73,6 +73,7 @@ class FrontDeskConsole {
                     <div class="fd-actions">
                         <button class="btn btn-primary btn-sm fd-btn-new-res">${I("calendar-plus")}<span>${__("Reservation")}</span></button>
                         <button class="btn btn-success btn-sm fd-btn-walkin">${I("log-in")}<span>${__("Walk-in")}</span></button>
+                        <button class="btn btn-default btn-sm fd-btn-night-audit" title="${__("Daily Night Audit & Owner Summary")}">${I("moon")}<span>${__("Night Audit")}</span></button>
                         <button class="btn btn-default btn-sm fd-btn-rest-pos">${I("utensils")}<span>${__("Restaurant POS")}</span></button>
                         <button class="btn btn-default btn-sm fd-btn-room-pos">${I("bell")}<span>${__("Room Service")}</span></button>
                         <button class="btn btn-default btn-sm fd-icon-btn fd-btn-refresh" title="${__("Refresh (R)")}">${I("refresh-cw")}</button>
@@ -113,6 +114,7 @@ class FrontDeskConsole {
         $c.find(".fd-btn-refresh").on("click", () => me.load_data());
         $c.find(".fd-btn-new-res").on("click", () => me.dialog_new_reservation());
         $c.find(".fd-btn-walkin").on("click", () => me.dialog_walkin());
+        $c.find(".fd-btn-night-audit").on("click", () => me.dialog_night_audit());
         $c.find(".fd-btn-rest-pos").on("click", () => me.open_pos_overlay("restaurant"));
         $c.find(".fd-btn-room-pos").on("click", () => me.dialog_pick_room_service_guest());
         $c.on("click", ".fd-tab", function () { me.switch_tab($(this).data("tab")); });
