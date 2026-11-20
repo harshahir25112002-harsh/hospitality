@@ -829,7 +829,8 @@ def get_ota_bookings(status=None, text=None, limit=100):
         "name", "ota_booking_id", "channel_name", "status", "guest_name",
         "guest_phone", "guest_email", "check_in_date", "check_out_date",
         "nights", "room_type_name", "rate_plan_name", "total_amount",
-        "currency", "payment_status", "received_at"
+        "currency", "payment_status", "received_at", "hotel_reservation",
+        "adults", "children", "remarks"
     ]
 
     return frappe.get_all(
@@ -840,3 +841,109 @@ def get_ota_bookings(status=None, text=None, limit=100):
         order_by="received_at desc, creation desc",
         limit=limit
     )
+
+
+@frappe.whitelist()
+def accept_ota_booking(ota_reservation_name, room_type=None):
+    """
+    Accepts an OTA Reservation and converts it into a formal Hotel Reservation.
+    1. Creates or matches Customer.
+    2. Matches Hotel Room Type.
+    3. Creates Hotel Reservation with status 'Reserved'.
+    4. Links Hotel Reservation <-> OTA Reservation.
+    """
+    require_console_access()
+    from frappe.utils import cint
+    ota = frappe.get_doc("OTA Reservation", ota_reservation_name)
+
+    if ota.hotel_reservation and frappe.db.exists("Hotel Reservation", ota.hotel_reservation):
+        return {
+            "status": "already_accepted",
+            "reservation": ota.hotel_reservation,
+            "message": _("Booking is already converted to {0}.").format(ota.hotel_reservation)
+        }
+
+    # 1. Match or Create Customer
+    customer = None
+    if ota.guest_phone:
+        customer = frappe.db.get_value("Customer", {"mobile_no": ota.guest_phone, "is_hotel_guest": 1}, "name")
+    if not customer and ota.guest_email:
+        customer = frappe.db.get_value("Customer", {"email_id": ota.guest_email, "is_hotel_guest": 1}, "name")
+    if not customer and ota.guest_name:
+        customer = frappe.db.get_value("Customer", {"customer_name": ota.guest_name, "is_hotel_guest": 1}, "name")
+
+    if not customer:
+        settings = get_settings()
+        cust_doc = frappe.get_doc({
+            "doctype": "Customer",
+            "customer_name": ota.guest_name or "OTA Guest",
+            "customer_type": "Individual",
+            "is_hotel_guest": 1,
+            "mobile_no": ota.guest_phone or "",
+            "email_id": ota.guest_email or "",
+            "customer_group": settings.guest_customer_group or None,
+            "territory": settings.guest_territory or None,
+        })
+        cust_doc.insert(ignore_permissions=True)
+        customer = cust_doc.name
+
+    # 2. Match Room Type
+    chosen_type = room_type
+    if not chosen_type and ota.room_type_name:
+        chosen_type = frappe.db.get_value("Hotel Room Type", {"name": ota.room_type_name}, "name")             or frappe.db.get_value("Hotel Room Type", {"room_type_name": ota.room_type_name}, "name")             or frappe.db.get_value("Hotel Room Type", {"room_type_name": ["like", f"%{ota.room_type_name}%"]}, "name")
+
+    if not chosen_type:
+        chosen_type = frappe.db.get_value("Hotel Room Type", {}, "name")
+
+    if not chosen_type:
+        frappe.throw(_("No Hotel Room Types found. Please create or sync room types first."))
+
+    # 3. Create Hotel Reservation
+    company = get_company()
+    nights = max(cint(ota.nights), 1)
+    rate = flt(ota.total_amount / nights) if ota.total_amount and nights else 0.0
+
+    res = frappe.get_doc({
+        "doctype": "Hotel Reservation",
+        "company": company,
+        "customer": customer,
+        "room_type": chosen_type,
+        "check_in_date": ota.check_in_date,
+        "check_out_date": ota.check_out_date,
+        "adults": max(cint(ota.adults), 1),
+        "children": cint(ota.children),
+        "status": "Reserved",
+        "rate_plan": ota.rate_plan_name or "",
+        "ota_source": ota.channel_name or "OTA",
+        "ota_booking_id": ota.ota_booking_id,
+        "ota_commission": flt(ota.commission),
+        "ota_reservation": ota.name,
+        "remarks": f"Booked via {ota.channel_name or 'OTA'} (Ref: {ota.ota_booking_id}). Total: {ota.currency} {ota.total_amount}.".strip(),
+        "stays": [
+            {
+                "room_type": chosen_type,
+                "from_date": ota.check_in_date,
+                "to_date": ota.check_out_date,
+                "nights": nights,
+                "rate": rate
+            }
+        ]
+    })
+    res.insert(ignore_permissions=True)
+
+    # 4. Link back to OTA Reservation
+    frappe.db.set_value("OTA Reservation", ota.name, {
+        "hotel_reservation": res.name,
+        "status": "Accepted"
+    })
+    frappe.db.commit()
+
+    emit_console_update("ota_booking_accepted", {"ota": ota.name, "reservation": res.name})
+
+    return {
+        "status": "success",
+        "reservation": res.name,
+        "guest_name": ota.guest_name,
+        "room_type": chosen_type,
+        "message": _("Accepted booking! Created Hotel Reservation {0}.").format(res.name)
+    }

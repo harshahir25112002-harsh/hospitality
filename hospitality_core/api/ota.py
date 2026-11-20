@@ -88,6 +88,14 @@ def pull_booking_revisions():
 	processed_count = 0
 	total_received = 0
 
+	# 0. Automatically sync room types and rooms from Channex
+	try:
+		if settings.property_id:
+			from hospitality_core.hospitality_core.doctype.ota_settings.ota_settings import fetch_room_types_from_ota
+			fetch_room_types_from_ota()
+	except Exception as e:
+		frappe.log_error(title="OTA Auto-Sync Rooms Error", message=str(e))
+
 	# 1. First, check the live revisions feed
 	endpoint = (settings.feed_endpoint or "booking_revisions/feed").strip().lstrip("/")
 	feed_url = get_api_url(endpoint)

@@ -276,3 +276,123 @@ body.fd-no-scroll { overflow: hidden; }
 .fd-rzp-qr { background: #fff; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); line-height: 0; }
 .fd-rzp-qr svg { width: 168px; height: 168px; }
 .fd-rzp-link { flex: 1; min-width: 220px; }
+
+
+/* ---------- OTA Bookings UI / UX Enhancements ---------- */
+.fd-ota-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.fd-ota-kpi-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: var(--fd-radius);
+    background: var(--fd-card);
+    border: 1px solid var(--fd-border);
+    box-shadow: var(--fd-shadow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.fd-ota-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--fd-shadow-hover);
+}
+.fd-ota-kpi-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+}
+.fd-ota-kpi-card.pending .fd-ota-kpi-icon { background: #fff7ed; color: #ea580c; }
+.fd-ota-kpi-card.accepted .fd-ota-kpi-icon { background: #f0fdf4; color: #16a34a; }
+.fd-ota-kpi-card.revenue .fd-ota-kpi-icon { background: #eff6ff; color: #2563eb; }
+.fd-ota-kpi-card.total .fd-ota-kpi-icon { background: #faf5ff; color: #9333ea; }
+.fd-ota-kpi-val { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.fd-ota-kpi-lbl { font-size: 11px; text-transform: uppercase; color: var(--fd-muted); letter-spacing: 0.05em; margin-top: 2px; }
+.fd-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+.fd-status-dot.orange { background: #f97316; }
+.fd-status-dot.green { background: #22c55e; }
+.fd-status-dot.blue { background: #3b82f6; }
+
+.fd-ota-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--fd-card);
+    padding: 10px 14px;
+    border-radius: var(--fd-radius);
+    border: 1px solid var(--fd-border);
+    margin-bottom: 14px;
+}
+.fd-ota-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 200px;
+}
+.fd-ota-search-wrap .icon {
+    position: absolute;
+    left: 10px;
+    color: var(--fd-muted);
+}
+.fd-ota-search-wrap .fd-ota-text {
+    padding-left: 32px !important;
+    width: 100%;
+    max-width: 320px;
+}
+.fd-ota-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+.fd-ota-sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #16a34a;
+    background: #f0fdf4;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #bbf7d0;
+}
+.fd-channel-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 3px;
+}
+.fd-ota-table tbody tr {
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+.fd-ota-table tbody tr:hover {
+    background-color: var(--fd-subtle);
+}
+.fd-btn-accept-ota {
+    background-color: #16a34a !important;
+    border-color: #16a34a !important;
+    color: #fff !important;
+    font-weight: 600;
+}
+.fd-btn-accept-ota:hover {
+    background-color: #15803d !important;
+}

@@ -10,6 +10,7 @@
   "channel_name",
   "column_break_top",
   "status",
+  "hotel_reservation",
   "received_at",
   "section_guest",
   "guest_name",
@@ -75,7 +76,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "New\nConfirmed\nModified\nCancelled",
+   "options": "New\nConfirmed\nAccepted\nModified\nCancelled",
    "reqd": 1
   },
   {
@@ -221,6 +222,15 @@
    "label": "Raw JSON Payload",
    "options": "JSON",
    "read_only": 1
+  },
+  {
+   "fieldname": "hotel_reservation",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Hotel Reservation",
+   "options": "Hotel Reservation",
+   "read_only": 1
   }
  ],
  "links": [],
@@ -264,4 +274,3 @@
  "sort_order": "DESC",
  "track_changes": 1
 }
-
