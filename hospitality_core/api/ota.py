@@ -76,58 +76,79 @@ def fetch_booking_details(booking_or_rev_id):
 @frappe.whitelist()
 def pull_booking_revisions():
 	"""
-	Pulls latest OTA bookings from the configured server every 15 minutes.
-	Saves directly into the OTA Reservation doctype.
+	Pulls latest OTA bookings from the configured server.
+	Checks both the live booking revisions feed and the bookings collection.
+	Saves directly into OTA Reservation.
 	"""
 	settings = get_ota_settings()
 	if not settings.enabled:
 		return {"status": "skipped", "message": "OTA Sync is disabled"}
 
 	headers = get_api_headers()
+	processed_count = 0
+	total_received = 0
+
+	# 1. First, check the live revisions feed
 	endpoint = (settings.feed_endpoint or "booking_revisions/feed").strip().lstrip("/")
-	url = get_api_url(endpoint)
-
+	feed_url = get_api_url(endpoint)
 	try:
-		resp = requests.get(url, headers=headers, timeout=30)
-		if resp.status_code != 200:
-			log_ota_error(f"Feed error HTTP {resp.status_code}: {resp.text[:200]}")
-			return {"status": "error", "code": resp.status_code}
-
-		data = resp.json().get("data", [])
-		processed_count = 0
-
-		for item in data:
-			rev_id = item.get("id")
-			attrs = item.get("attributes") or item
-			attrs["revision_id"] = rev_id
-
-			ota_res = save_ota_reservation(attrs, revision_id=rev_id)
-			if ota_res:
-				processed_count += 1
-
-				# Acknowledge to server if enabled
+		resp = requests.get(feed_url, headers=headers, timeout=20)
+		if resp.status_code == 200:
+			feed_data = resp.json().get("data", [])
+			total_received += len(feed_data)
+			for item in feed_data:
+				rev_id = item.get("id")
+				attrs = item.get("attributes") or item
+				attrs["revision_id"] = rev_id
+				res_name = save_ota_reservation(attrs, revision_id=rev_id)
+				if res_name:
+					processed_count += 1
 				if settings.auto_acknowledge and rev_id:
 					acknowledge_revision(rev_id)
-
-		# Update last pull timestamp & counter
-		frappe.db.set_single_value("OTA Settings", {
-			"last_pull_at": now_datetime(),
-			"connection_status": "Connected"
-		})
-		try:
-			frappe.db.sql(
-				"UPDATE `tabSingles` SET value = CAST(value AS UNSIGNED) + %s WHERE doctype = 'OTA Settings' AND field = 'total_bookings_received'",
-				(processed_count,)
-			)
-		except Exception:
-			pass
-		frappe.db.commit()
-
-		return {"status": "success", "processed": processed_count, "total_received": len(data)}
 	except Exception as e:
-		frappe.log_error(title="OTA: Pull bookings failed", message=frappe.get_traceback())
-		log_ota_error(f"Pull bookings failed: {str(e)[:300]}")
-		return {"status": "error", "message": str(e)}
+		frappe.log_error(title="OTA Feed Error", message=str(e))
+
+	# 2. Also check the bookings endpoint to ensure all existing bookings (like those created in demo/portal) are fetched
+	try:
+		bookings_url = get_api_url("bookings")
+		params = {}
+		if settings.property_id:
+			params["filter[property_id]"] = settings.property_id
+
+		resp_b = requests.get(bookings_url, headers=headers, params=params, timeout=20)
+		if resp_b.status_code == 200:
+			bookings_data = resp_b.json().get("data", [])
+			if not bookings_data and settings.property_id:
+				resp_b2 = requests.get(bookings_url, headers=headers, timeout=20)
+				if resp_b2.status_code == 200:
+					bookings_data = resp_b2.json().get("data", [])
+
+			total_received += len(bookings_data)
+			for item in bookings_data:
+				b_id = item.get("id")
+				attrs = item.get("attributes") or item
+				attrs["booking_id"] = b_id
+				res_name = save_ota_reservation(attrs, revision_id=b_id)
+				if res_name:
+					processed_count += 1
+	except Exception as e:
+		frappe.log_error(title="OTA Bookings Error", message=str(e))
+
+	# Update last pull timestamp & counter
+	frappe.db.set_single_value("OTA Settings", {
+		"last_pull_at": now_datetime(),
+		"connection_status": "Connected"
+	})
+	try:
+		frappe.db.sql(
+			"UPDATE `tabSingles` SET value = CAST(value AS UNSIGNED) + %s WHERE doctype = 'OTA Settings' AND field = 'total_bookings_received'",
+			(processed_count,)
+		)
+	except Exception:
+		pass
+	frappe.db.commit()
+
+	return {"status": "success", "processed": processed_count, "total_received": total_received}
 
 
 # ---------------------------------------------------------------- Save OTA Reservation
@@ -139,7 +160,8 @@ def save_ota_reservation(data, raw_data="", revision_id=None):
 		return None
 
 	ota_booking_id = (
-		data.get("ota_reservation_code")
+		data.get("unique_id")
+		or data.get("ota_reservation_code")
 		or data.get("booking_id")
 		or data.get("id")
 		or revision_id
@@ -168,7 +190,7 @@ def save_ota_reservation(data, raw_data="", revision_id=None):
 	first_name = customer_data.get("name") or customer_data.get("first_name") or ""
 	last_name = customer_data.get("surname") or customer_data.get("last_name") or ""
 	guest_name = f"{first_name} {last_name}".strip() or data.get("guest_name") or "OTA Guest"
-	email = customer_data.get("email") or data.get("email") or ""
+	email = customer_data.get("mail") or customer_data.get("email") or data.get("email") or ""
 	phone = customer_data.get("phone") or customer_data.get("mobile") or data.get("phone") or ""
 
 	# Dates & Occupancy
@@ -196,9 +218,9 @@ def save_ota_reservation(data, raw_data="", revision_id=None):
 	adults = cint(occupancy.get("adults") or data.get("adults") or 1)
 	children = cint(occupancy.get("children") or data.get("children") or 0)
 
-	total_amount = flt(data.get("total_price") or data.get("amount") or 0.0)
+	total_amount = flt(data.get("amount") or data.get("total_price") or 0.0)
 	currency = data.get("currency") or "INR"
-	commission = flt(data.get("commission") or 0.0)
+	commission = flt(data.get("ota_commission") or data.get("commission") or 0.0)
 	payment_status = data.get("payment_status") or ""
 	payment_collect = data.get("payment_collect") or data.get("collect_type") or ""
 

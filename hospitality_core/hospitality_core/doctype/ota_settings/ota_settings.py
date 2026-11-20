@@ -128,21 +128,8 @@ def fetch_room_types_from_ota():
 	url = get_api_url("room_types")
 	params = {"filter[property_id]": settings.property_id}
 
-	hotel_settings = frappe.get_single("Hotel Settings")
-	default_item = hotel_settings.default_room_item
-	if not default_item:
-		default_item = "HOTEL-ROOM-NIGHT"
-		if not frappe.db.exists("Item", default_item):
-			frappe.get_doc({
-				"doctype": "Item",
-				"item_code": default_item,
-				"item_name": "Room Night",
-				"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups",
-				"is_stock_item": 0,
-				"stock_uom": "Nos",
-			}).insert(ignore_permissions=True)
-		hotel_settings.default_room_item = default_item
-		hotel_settings.save(ignore_permissions=True)
+	from hospitality_core.utils import ensure_default_room_item
+	default_item = ensure_default_room_item()
 
 	try:
 		resp = requests.get(url, headers=headers, params=params, timeout=15)

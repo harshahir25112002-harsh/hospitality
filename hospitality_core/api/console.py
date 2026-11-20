@@ -794,18 +794,8 @@ def get_in_house_for_pos():
 def create_sample_rooms():
     """One-click starter data (System Manager only): 2 room types, 6 rooms. Idempotent."""
     frappe.only_for("System Manager")
-    settings = frappe.get_single("Hotel Settings")
-    item = settings.default_room_item
-    if not item:
-        item = "HOTEL-ROOM-NIGHT"
-        if not frappe.db.exists("Item", item):
-            frappe.get_doc({
-                "doctype": "Item", "item_code": item, "item_name": "Room Night",
-                "item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups",
-                "is_stock_item": 0, "stock_uom": "Nos",
-            }).insert(ignore_permissions=True)
-        settings.default_room_item = item
-        settings.save(ignore_permissions=True)
+    from hospitality_core.utils import ensure_default_room_item
+    item = ensure_default_room_item()
     created = []
     for rt, rate, floor_rooms in (("Standard", 2500, ("101", "102", "103")), ("Deluxe", 4000, ("201", "202", "203"))):
         if not frappe.db.exists("Hotel Room Type", rt):
