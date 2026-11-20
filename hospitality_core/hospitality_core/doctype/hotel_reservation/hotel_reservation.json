@@ -40,7 +40,7 @@
   "ota_booking_id",
   "column_break_ota",
   "ota_commission",
-  "ota_booking_log"
+  "ota_reservation"
  ],
  "fields": [
   {
@@ -280,11 +280,11 @@
    "read_only": 1
   },
   {
-   "fieldname": "ota_booking_log",
+   "fieldname": "ota_reservation",
    "fieldtype": "Link",
-   "label": "OTA Booking Log",
+   "label": "OTA Reservation",
    "no_copy": 1,
-   "options": "OTA Booking Log",
+   "options": "OTA Reservation",
    "read_only": 1
   }
  ],

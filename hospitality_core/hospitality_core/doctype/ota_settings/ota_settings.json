@@ -1,52 +1,26 @@
 {
  "actions": [],
- "creation": "2026-11-19 19:15:00.000000",
+ "creation": "2026-11-20 12:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
- "issingle": 1,
  "field_order": [
   "section_connection",
   "enabled",
-  "environment",
+  "api_base_url",
   "column_break_conn",
   "api_key",
-  "api_base_url",
-  "section_property",
-  "channex_property_id",
-  "channex_property_name",
-  "column_break_property",
-  "connection_status",
-  "last_connected_at",
-  "tab_mapping",
-  "section_room_type_map",
-  "room_type_map",
-  "section_rate_plan_map",
-  "rate_plan_map",
-  "tab_webhook_sync",
-  "section_webhook",
-  "webhook_url",
-  "webhook_secret",
-  "column_break_webhook",
-  "channex_webhook_id",
-  "webhook_registered",
+  "property_id",
   "section_sync",
-  "auto_sync_availability",
-  "auto_sync_rates",
-  "auto_create_reservation",
+  "feed_endpoint",
+  "pull_interval_minutes",
   "column_break_sync",
   "auto_acknowledge",
-  "pull_interval_minutes",
-  "section_booking_defaults",
-  "default_ota_source",
-  "ota_customer_group",
-  "column_break_defaults",
-  "ota_territory",
-  "tab_status",
   "section_status",
+  "connection_status",
+  "last_connected_at",
   "last_pull_at",
-  "last_push_at",
-  "total_bookings_received",
   "column_break_status",
+  "total_bookings_received",
   "last_error",
   "last_error_at"
  ],
@@ -54,23 +28,21 @@
   {
    "fieldname": "section_connection",
    "fieldtype": "Section Break",
-   "label": "Channex Connection"
+   "label": "API Connection"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "enabled",
    "fieldtype": "Check",
-   "label": "Enable OTA Integration",
-   "description": "Turn on to activate Channex OTA sync"
+   "label": "Enable OTA Sync"
   },
   {
-   "default": "Staging",
-   "fieldname": "environment",
-   "fieldtype": "Select",
-   "label": "Environment",
-   "options": "Staging\nProduction",
-   "reqd": 1,
-   "description": "Use Staging for testing, Production after Channex certification"
+   "default": "https://staging.channex.io/api/v1",
+   "fieldname": "api_base_url",
+   "fieldtype": "Data",
+   "label": "API Base URL",
+   "description": "Enter channel manager or OTA API URL (e.g. https://staging.channex.io/api/v1)",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_conn",
@@ -79,36 +51,45 @@
   {
    "fieldname": "api_key",
    "fieldtype": "Password",
-   "label": "Channex API Key",
-   "description": "Generate from staging.channex.io or app.channex.io"
+   "label": "API Key / Auth Token"
   },
   {
-   "fieldname": "api_base_url",
+   "fieldname": "property_id",
    "fieldtype": "Data",
-   "label": "API Base URL",
-   "read_only": 1,
-   "description": "Auto-set based on Environment selection"
+   "label": "Property ID / Hotel Code"
   },
   {
-   "fieldname": "section_property",
+   "fieldname": "section_sync",
    "fieldtype": "Section Break",
-   "label": "Property"
+   "label": "Pull Schedule"
   },
   {
-   "fieldname": "channex_property_id",
+   "default": "booking_revisions/feed",
+   "fieldname": "feed_endpoint",
    "fieldtype": "Data",
-   "label": "Channex Property ID",
-   "description": "UUID of your property on Channex. Created via API or enter from Channex dashboard."
+   "label": "Feed Endpoint Path",
+   "description": "API path for booking feed (e.g. booking_revisions/feed)"
   },
   {
-   "fieldname": "channex_property_name",
-   "fieldtype": "Data",
-   "label": "Property Name on Channex",
-   "read_only": 1
+   "default": "15",
+   "fieldname": "pull_interval_minutes",
+   "fieldtype": "Int",
+   "label": "Pull Interval (Minutes)"
   },
   {
-   "fieldname": "column_break_property",
+   "fieldname": "column_break_sync",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_acknowledge",
+   "fieldtype": "Check",
+   "label": "Auto-Acknowledge Received Bookings"
+  },
+  {
+   "fieldname": "section_status",
+   "fieldtype": "Section Break",
+   "label": "Status & Logs"
   },
   {
    "default": "Not Connected",
@@ -125,170 +106,14 @@
    "read_only": 1
   },
   {
-   "fieldname": "tab_mapping",
-   "fieldtype": "Tab Break",
-   "label": "Room & Rate Mapping"
-  },
-  {
-   "fieldname": "section_room_type_map",
-   "fieldtype": "Section Break",
-   "label": "Room Type Mapping",
-   "description": "Map your Hotel Room Types to Channex Room Type IDs. Push to create them on Channex, or enter IDs manually."
-  },
-  {
-   "fieldname": "room_type_map",
-   "fieldtype": "Table",
-   "label": "Room Type Mapping",
-   "options": "OTA Room Type Map"
-  },
-  {
-   "fieldname": "section_rate_plan_map",
-   "fieldtype": "Section Break",
-   "label": "Rate Plan Mapping",
-   "description": "Map your Room Rate Plans to Channex Rate Plan IDs."
-  },
-  {
-   "fieldname": "rate_plan_map",
-   "fieldtype": "Table",
-   "label": "Rate Plan Mapping",
-   "options": "OTA Rate Plan Map"
-  },
-  {
-   "fieldname": "tab_webhook_sync",
-   "fieldtype": "Tab Break",
-   "label": "Webhook & Sync"
-  },
-  {
-   "fieldname": "section_webhook",
-   "fieldtype": "Section Break",
-   "label": "Webhook Configuration",
-   "description": "Channex pushes new bookings to this URL in real-time"
-  },
-  {
-   "fieldname": "webhook_url",
-   "fieldtype": "Data",
-   "label": "Webhook URL",
-   "read_only": 1,
-   "description": "Your ERPNext endpoint. Auto-generated. Give this URL to Channex."
-  },
-  {
-   "fieldname": "webhook_secret",
-   "fieldtype": "Password",
-   "label": "Webhook Secret",
-   "description": "Secret token to verify incoming webhooks. Set any strong random string."
-  },
-  {
-   "fieldname": "column_break_webhook",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "channex_webhook_id",
-   "fieldtype": "Data",
-   "label": "Channex Webhook ID",
-   "read_only": 1,
-   "description": "Filled after webhook is registered on Channex"
-  },
-  {
-   "default": "0",
-   "fieldname": "webhook_registered",
-   "fieldtype": "Check",
-   "label": "Webhook Registered",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_sync",
-   "fieldtype": "Section Break",
-   "label": "Sync Settings"
-  },
-  {
-   "default": "1",
-   "fieldname": "auto_sync_availability",
-   "fieldtype": "Check",
-   "label": "Auto Push Availability",
-   "description": "Automatically push room availability to Channex when room status changes"
-  },
-  {
-   "default": "1",
-   "fieldname": "auto_sync_rates",
-   "fieldtype": "Check",
-   "label": "Auto Push Rates",
-   "description": "Automatically push rates to Channex when Rate Plan is updated"
-  },
-  {
-   "default": "1",
-   "fieldname": "auto_create_reservation",
-   "fieldtype": "Check",
-   "label": "Auto Create Reservation",
-   "description": "Automatically create Hotel Reservation from incoming OTA bookings"
-  },
-  {
-   "fieldname": "column_break_sync",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "1",
-   "fieldname": "auto_acknowledge",
-   "fieldtype": "Check",
-   "label": "Auto Acknowledge Bookings",
-   "description": "Automatically acknowledge bookings to Channex after processing (mandatory for Channex)"
-  },
-  {
-   "default": "15",
-   "fieldname": "pull_interval_minutes",
-   "fieldtype": "Int",
-   "label": "Pull Interval (Minutes)",
-   "description": "Backup cron pulls bookings every N minutes. Channex recommends 15-20."
-  },
-  {
-   "fieldname": "section_booking_defaults",
-   "fieldtype": "Section Break",
-   "label": "OTA Booking Defaults"
-  },
-  {
-   "default": "OTA",
-   "fieldname": "default_ota_source",
-   "fieldtype": "Data",
-   "label": "Default OTA Source Label"
-  },
-  {
-   "fieldname": "ota_customer_group",
-   "fieldtype": "Link",
-   "label": "OTA Guest Customer Group",
-   "options": "Customer Group",
-   "description": "Customer Group for guests created from OTA bookings"
-  },
-  {
-   "fieldname": "column_break_defaults",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "ota_territory",
-   "fieldtype": "Link",
-   "label": "OTA Guest Territory",
-   "options": "Territory",
-   "description": "Territory for guests created from OTA bookings"
-  },
-  {
-   "fieldname": "tab_status",
-   "fieldtype": "Tab Break",
-   "label": "Status & Logs"
-  },
-  {
-   "fieldname": "section_status",
-   "fieldtype": "Section Break",
-   "label": "Sync Status"
-  },
-  {
    "fieldname": "last_pull_at",
    "fieldtype": "Datetime",
    "label": "Last Pull At",
    "read_only": 1
   },
   {
-   "fieldname": "last_push_at",
-   "fieldtype": "Datetime",
-   "label": "Last Push At",
-   "read_only": 1
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -296,10 +121,6 @@
    "fieldtype": "Int",
    "label": "Total Bookings Received",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_status",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "last_error",
@@ -314,8 +135,9 @@
    "read_only": 1
   }
  ],
+ "issingle": 1,
  "links": [],
- "modified": "2026-11-19 19:15:00.000000",
+ "modified": "2026-11-20 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Hospitality Core",
  "name": "OTA Settings",
@@ -347,4 +169,3 @@
  "sort_field": "modified",
  "sort_order": "DESC"
 }
-
