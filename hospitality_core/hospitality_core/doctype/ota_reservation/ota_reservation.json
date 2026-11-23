@@ -101,8 +101,7 @@
   {
    "fieldname": "guest_email",
    "fieldtype": "Data",
-   "label": "Guest Email",
-   "options": "Email"
+   "label": "Guest Email"
   },
   {
    "fieldname": "guest_phone",

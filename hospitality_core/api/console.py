@@ -942,11 +942,15 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
         valid_rate_plan = None
 
     # 3. Match or Create Customer
+    valid_email = (ota.guest_email or "").strip()
+    if valid_email in ("***", "N/A", "none", "null", "-", "undefined") or "@" not in valid_email:
+        valid_email = None
+
     customer = None
     if ota.guest_phone:
         customer = frappe.db.get_value("Customer", {"mobile_no": ota.guest_phone, "is_hotel_guest": 1}, "name")
-    if not customer and ota.guest_email:
-        customer = frappe.db.get_value("Customer", {"email_id": ota.guest_email, "is_hotel_guest": 1}, "name")
+    if not customer and valid_email:
+        customer = frappe.db.get_value("Customer", {"email_id": valid_email, "is_hotel_guest": 1}, "name")
     if not customer and ota.guest_name:
         customer = frappe.db.get_value("Customer", {"customer_name": ota.guest_name, "is_hotel_guest": 1}, "name")
 
@@ -958,7 +962,7 @@ def accept_ota_booking(ota_reservation_name, room_type=None):
             "customer_type": "Individual",
             "is_hotel_guest": 1,
             "mobile_no": ota.guest_phone or "",
-            "email_id": ota.guest_email or "",
+            "email_id": valid_email,
             "customer_group": settings.guest_customer_group or None,
             "territory": settings.guest_territory or None,
         })

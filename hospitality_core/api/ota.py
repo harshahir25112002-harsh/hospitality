@@ -301,6 +301,17 @@ def pull_booking_revisions():
 
 
 # ---------------------------------------------------------------- Save OTA Reservation
+def sanitize_email(val):
+	if not val:
+		return ""
+	val = str(val).strip()
+	if val in ("***", "N/A", "none", "null", "-", "undefined") or val.startswith("*"):
+		return ""
+	if "@" in val and "." in val:
+		return val
+	return ""
+
+
 def save_ota_reservation(data, raw_data="", revision_id=None, room_type_map=None, rate_plan_map=None):
 	"""
 	Creates or updates an OTA Reservation directly with incoming booking data.
@@ -339,8 +350,9 @@ def save_ota_reservation(data, raw_data="", revision_id=None, room_type_map=None
 	first_name = customer_data.get("name") or customer_data.get("first_name") or ""
 	last_name = customer_data.get("surname") or customer_data.get("last_name") or ""
 	guest_name = f"{first_name} {last_name}".strip() or data.get("guest_name") or "OTA Guest"
-	email = customer_data.get("mail") or customer_data.get("email") or data.get("email") or ""
-	phone = customer_data.get("phone") or customer_data.get("mobile") or data.get("phone") or ""
+	email = sanitize_email(customer_data.get("mail") or customer_data.get("email") or data.get("email") or "")
+	raw_phone = customer_data.get("phone") or customer_data.get("mobile") or data.get("phone") or ""
+	phone = "" if str(raw_phone).strip() in ("***", "N/A", "none", "null", "-") else str(raw_phone).strip()
 
 	# Dates & Occupancy
 	check_in = data.get("arrival_date") or data.get("check_in")
