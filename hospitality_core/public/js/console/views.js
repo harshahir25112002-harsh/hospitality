@@ -388,10 +388,17 @@ Object.assign(FrontDeskConsole.prototype, {
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="fd-room-cell">
-                                                    <div class="fd-room-type-title">${FD.esc(r.room_type_name || "Demo Double")}</div>
-                                                    <div class="fd-rate-plan-tag">${FD.esc(r.rate_plan_name || "Standard Rate")}</div>
-                                                </div>
+                                                ${(() => {
+                                                    const isUuid = (s) => typeof s === "string" && s.trim().length === 36 && s.indexOf("-") !== -1;
+                                                    const rt = (r.room_type_name && !isUuid(r.room_type_name)) ? r.room_type_name : "Demo Double";
+                                                    const rp = (r.rate_plan_name && !isUuid(r.rate_plan_name)) ? r.rate_plan_name : "Standard Rate";
+                                                    return `
+                                                        <div class="fd-room-cell">
+                                                            <div class="fd-room-type-title">${FD.esc(rt)}</div>
+                                                            <div class="fd-rate-plan-tag">${FD.esc(rp)}</div>
+                                                        </div>
+                                                    `;
+                                                })()}
                                             </td>
                                             <td class="text-right">
                                                 <div class="fd-amount-cell">

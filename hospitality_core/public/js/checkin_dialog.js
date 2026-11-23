@@ -35,7 +35,7 @@ function hospitality_core_checkin_dialog(reservation_name, on_done) {
                 { fieldtype: "Section Break", label: __("Identity Verification") },
                 { fieldtype: "Select", fieldname: "guest_id_type", label: __("ID Type"), reqd: data.require_id ? 1 : 0,
                   options: ["", "Aadhaar", "PAN", "Driving Licence", "Passport", "Voter ID", "Other"] },
-                { fieldtype: "Password", fieldname: "guest_id_number", label: __("ID Number"), reqd: data.require_id ? 1 : 0,
+                { fieldtype: "Data", fieldname: "guest_id_number", label: __("ID Number"), reqd: data.require_id ? 1 : 0,
                   description: __("Stored for authorised staff only; shown masked elsewhere.") },
                 { fieldtype: "Column Break" },
                 { fieldtype: "Attach", fieldname: "guest_id_document", label: __("ID Document (optional)"),

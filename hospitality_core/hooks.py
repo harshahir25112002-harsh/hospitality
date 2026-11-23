@@ -26,6 +26,14 @@ after_install = "hospitality_core.setup.install.after_install"
 extend_doctype_class = {"File": "hospitality_core.file_override.HospitalityFile"}
 
 doc_events = {
+    "Hotel Room": {
+        "on_update": "hospitality_core.api.ota.on_hotel_room_change",
+        "on_trash": "hospitality_core.api.ota.on_hotel_room_change"
+    },
+    "Hotel Reservation": {
+        "on_update": "hospitality_core.api.ota.on_reservation_change",
+        "on_cancel": "hospitality_core.api.ota.on_reservation_change"
+    },
     "Issue": {
         "on_update": "hospitality_core.maintenance.on_issue_update"
     },

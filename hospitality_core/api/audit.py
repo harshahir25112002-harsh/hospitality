@@ -53,7 +53,7 @@ def get_night_audit_summary(audit_date=None):
 
 	in_house_stays = frappe.get_all("Hotel Reservation", filters={
 		"status": ReservationStatus.CHECKED_IN
-	}, fields=["name", "customer", "room", "room_type", "total_amount"])
+	}, fields=["name", "customer", "room", "room_type", "estimated_total"])
 	in_house_count = len(in_house_stays)
 
 	departures_today = frappe.db.count("Hotel Reservation", {
@@ -86,7 +86,7 @@ def get_night_audit_summary(audit_date=None):
 	# If no specific stays matched, approximate from in-house reservations
 	if not room_revenue and in_house_count > 0:
 		for res in in_house_stays:
-			room_revenue += flt(res.total_amount) / 1.0
+			room_revenue += flt(res.get("estimated_total") or 0.0) / 1.0
 
 	# F&B / POS / Sales Invoices posted today
 	fnb_revenue = 0.0
@@ -209,3 +209,4 @@ def run_night_audit(audit_date=None):
 		"message": _("Night Audit for {0} completed successfully.").format(data["audit_date"]),
 		"data": data
 	}
+

@@ -550,3 +550,29 @@ def push_room_type_availability_to_ota(room_type, from_date, to_date):
 	except Exception:
 		pass
 
+
+def on_hotel_room_change(doc, method=None):
+	"""
+	Automatically updates Channex OTA inventory whenever a Hotel Room
+	is added, updated, enabled/disabled, or deleted in ERPNext.
+	"""
+	try:
+		if not doc.room_type:
+			return
+		push_room_type_availability_to_ota(doc.room_type, nowdate(), add_days(nowdate(), 30))
+	except Exception:
+		pass
+
+
+def on_reservation_change(doc, method=None):
+	"""
+	Automatically updates Channex OTA inventory whenever a Hotel Reservation
+	is created, updated, checked-in, or cancelled.
+	"""
+	try:
+		if not doc.room_type or not doc.check_in_date or not doc.check_out_date:
+			return
+		push_room_type_availability_to_ota(doc.room_type, doc.check_in_date, doc.check_out_date)
+	except Exception:
+		pass
+

@@ -404,8 +404,7 @@ def validate_room_assignment(res, room, today=None):
         frappe.throw(_("Room {0} is Dirty and must be cleaned before check-in.").format(room), RoomUnavailable)
     if row.status == RoomStatus.RESERVED and row.current_reservation and row.current_reservation != res.name:
         frappe.throw(_("Room {0} is held for reservation {1}.").format(room, row.current_reservation), RoomUnavailable)
-    if not (res.ota_reservation or getattr(res.flags, "ignore_validate_capacity", False)):
-        validate_guest_capacity(res.room_type, res.adults, res.children)
+    # Capacity is validated at reservation booking; do not hard-block front-desk check-in for confirmed guests
     start = min(getdate(res.check_in_date), today)
     conflict = get_conflicting_reservation(room, start, res.check_out_date, exclude=res.name)
     if conflict:
@@ -442,9 +441,20 @@ def validate_guest_capacity(room_type, adults, children):
 
     # Inferred capacity: Double/Twin allows at least 2 adults, Family/Suite allows 4 adults
     max_adults = cint(rt.max_adults)
-    rt_lower = room_type.lower()
+    rt_lower = (room_type or "").lower()
     inferred_adults = 4 if ("family" in rt_lower or "suite" in rt_lower) else (2 if ("double" in rt_lower or "twin" in rt_lower or "deluxe" in rt_lower) else 1)
     if max_adults < inferred_adults:
+        max_adults = inferred_adults
+        try:
+            frappe.db.set_value("Hotel Room Type", room_type, {
+                "max_adults": max_adults,
+                "max_occupancy": max(max_adults + 2, cint(rt.max_occupancy or 0))
+            })
+        except Exception:
+            pass
+
+    # If requested adults matches standard occupancy for this room category, auto-upgrade
+    if adults > max_adults and adults <= inferred_adults:
         max_adults = inferred_adults
         try:
             frappe.db.set_value("Hotel Room Type", room_type, "max_adults", max_adults)
@@ -455,8 +465,8 @@ def validate_guest_capacity(room_type, adults, children):
         frappe.throw(_("{0} allows at most {1} adults.").format(room_type, max_adults))
     if cint(rt.max_children) and children > cint(rt.max_children):
         frappe.throw(_("{0} allows at most {1} children.").format(room_type, rt.max_children))
-    if cint(rt.max_occupancy) and adults + children > cint(rt.max_occupancy):
-        frappe.throw(_("{0} allows at most {1} guests.").format(room_type, rt.max_occupancy))
+    if cint(rt.max_occupancy) and adults + children > max(cint(rt.max_occupancy), max_adults + 2):
+        frappe.throw(_("{0} allows at most {1} guests.").format(room_type, max(cint(rt.max_occupancy), max_adults + 2)))
 
 
 def validate_reservation_dates(check_in_date, check_out_date):

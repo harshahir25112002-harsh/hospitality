@@ -310,14 +310,45 @@ def portal(token=None):
 	Renders an elegant, modern mobile web page for guest self pre-check-in.
 	Works on all smartphones without downloading an app.
 	"""
-	if not token:
-		return "<h3>Invalid or missing pre-check-in link.</h3>"
+	if not token or token == "preview":
+		settings = get_settings()
+		hotel_name = getattr(settings, "hotel_name", None) or get_company() or "Sky Hotel"
+		hotel_phone = getattr(settings, "contact_number", None) or ""
+		hotel_address = getattr(settings, "address_line", None) or ""
+		details = {
+			"doctype": "Hotel Reservation",
+			"name": "DEMO-PREVIEW",
+			"guest_name": "Demo Guest",
+			"phone": "+44 7000 123456",
+			"check_in_date": nowdate(),
+			"check_out_date": nowdate(),
+			"nights": 2,
+			"room_type": "Demo Double",
+			"room": "101",
+			"adults": 2,
+			"status": "Reserved",
+			"guest_id_type": "",
+			"guest_id_number": "",
+			"has_id": False,
+			"hotel_name": hotel_name,
+			"hotel_phone": hotel_phone,
+			"hotel_address": hotel_address,
+		}
+	else:
+		doctype, docname = verify_guest_token(token)
+		if not doctype or not docname:
+			html_err = """<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Link Expired</title><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8fafc;color:#334155;}
+.box{background:white;padding:32px 24px;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.06);text-align:center;max-width:420px;margin:16px;}
+h3{color:#dc2626;margin:0 0 10px 0;font-size:18px;}p{font-size:14px;color:#64748b;line-height:1.5;margin:0;}</style></head>
+<body><div class="box"><h3>⚠️ Link Expired or Invalid</h3><p>This pre-check-in link is expired or invalid. Please contact the front desk for assistance.</p></div></body></html>"""
+			frappe.response["type"] = "raw"
+			frappe.response["response"] = html_err
+			frappe.response["content_type"] = "text/html; charset=utf-8"
+			return html_err
 
-	doctype, docname = verify_guest_token(token)
-	if not doctype or not docname:
-		return "<h3>This pre-check-in link is expired or invalid.</h3>"
-
-	details = get_precheckin_details(token)
+		details = get_precheckin_details(token)
 
 	html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -621,7 +652,8 @@ def portal(token=None):
 </body>
 </html>
 """
-	frappe.response["type"] = "page"
-	frappe.response["page_name"] = "guest_precheckin"
-	frappe.response["message"] = html
+	frappe.response["type"] = "raw"
+	frappe.response["response"] = html
+	frappe.response["content_type"] = "text/html; charset=utf-8"
 	return html
+

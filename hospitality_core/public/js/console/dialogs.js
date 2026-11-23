@@ -154,7 +154,7 @@ Object.assign(FrontDeskConsole.prototype, {
                 { fieldtype: "Section Break", label: __("Identity Verification") },
                 { fieldtype: "Select", fieldname: "guest_id_type", label: __("ID Type"), options: ["", "Aadhaar", "PAN", "Driving Licence", "Passport", "Voter ID", "Other"] },
                 { fieldtype: "Column Break" },
-                { fieldtype: "Password", fieldname: "guest_id_number", label: __("ID Number") },
+                { fieldtype: "Data", fieldname: "guest_id_number", label: __("ID Number") },
             ] : []),
         ];
     },
@@ -594,11 +594,9 @@ Object.assign(FrontDeskConsole.prototype, {
                                     <div style="font-weight:700;color:#15803d;font-size:14px;">💬 WhatsApp Direct Guest Concierge</div>
                                     <div style="font-size:12px;color:#166534;">Guest Mobile: <b>${FD.esc(data.guest_phone || __("Not set"))}</b></div>
                                 </div>
-                                ${data.precheckin_url ? `
-                                    <a href="${FD.esc(data.precheckin_url)}" target="_blank" class="btn btn-default btn-xs" style="font-weight:600;">
-                                        ${FD.icon("external-link")} <span>${__("Preview Web Portal")}</span>
-                                    </a>
-                                ` : ""}
+                                <a href="${FD.esc((data.precheckin_url && data.precheckin_url.indexOf('/api/method/') !== -1) ? data.precheckin_url.substring(data.precheckin_url.indexOf('/api/method/')) : (data.precheckin_url || '/api/method/hospitality_core.api.guest.portal?token=preview'))}" target="_blank" class="btn btn-default btn-xs" style="font-weight:600;">
+                                    ${FD.icon("external-link")} <span>${__("Preview Web Portal")}</span>
+                                </a>
                             </div>
                             <div class="fd-seg fd-wa-msg-type" style="margin-bottom:14px;">
                                 <button type="button" class="fd-seg-btn active" data-type="welcome">⚡ ${__("1-Min Pre-Check-in Link")}</button>
