@@ -217,11 +217,17 @@ def pull_booking_revisions():
 	processed_count = 0
 	total_received = 0
 
-	# 0. Automatically sync room types and rooms from Channex
+	# 0. Load mappings
+	room_type_map = get_ota_room_type_map()
+	rate_plan_map = get_ota_rate_plan_map()
+
+	# Automatically sync room types and rooms from Channex if property configured
 	try:
 		if settings.property_id:
 			from hospitality_core.hospitality_core.doctype.ota_settings.ota_settings import fetch_room_types_from_ota
 			fetch_room_types_from_ota()
+			room_type_map = get_ota_room_type_map()
+			rate_plan_map = get_ota_rate_plan_map()
 	except Exception as e:
 		frappe.log_error(title="OTA Auto-Sync Rooms Error", message=str(e))
 
@@ -285,7 +291,13 @@ def pull_booking_revisions():
 		pass
 	frappe.db.commit()
 
-	return {"status": "success", "processed": processed_count, "total_received": total_received}
+	return {
+		"status": "success",
+		"processed": processed_count,
+		"total_received": total_received,
+		"property_id": settings.property_id or "None",
+		"message": _("Fetched {0} booking(s) from Channex.").format(processed_count)
+	}
 
 
 # ---------------------------------------------------------------- Save OTA Reservation

@@ -492,10 +492,18 @@ Object.assign(FrontDeskConsole.prototype, {
                 freeze: true,
                 freeze_message: __("Syncing rooms & bookings with Channex...")
             }).then((r) => {
-                frappe.show_alert({
-                    message: __("Synced with Channex! {0} booking(s) updated.", [r.processed || 0]),
-                    indicator: "green"
-                });
+                if (r && r.processed > 0) {
+                    frappe.show_alert({
+                        message: __("Success! Fetched {0} booking(s) from Channex.", [r.processed]),
+                        indicator: "green"
+                    });
+                } else {
+                    frappe.msgprint({
+                        title: __("Sync Completed"),
+                        indicator: "blue",
+                        message: __("Sync completed, but <b>0 new bookings</b> were found.<br><br><b>Connected Property:</b> <code>{0}</code><br><br>💡 <b>Tip:</b> If your booking was created under a new property in Channex, open <b>OTA Settings</b>, click <b>'Select Property'</b>, and choose your new property.", [r.property_id || __("Not set")])
+                    });
+                }
                 load();
                 me.load_data(true);
             }).catch((err) => {

@@ -30,35 +30,59 @@ frappe.ui.form.on("OTA Settings", {
 								indicator: "green",
 								message: r.message.message
 							});
-
-							if (r.message.properties && r.message.properties.length > 0 && !frm.doc.property_id) {
-								let options = r.message.properties.map(
-									(p) => `${p.title} (${p.id})`
-								);
-								frappe.prompt(
-									[{
-										label: __("Select Property"),
-										fieldname: "property",
-										fieldtype: "Select",
-										options: options,
-										reqd: 1
-									}],
-									(values) => {
-										let match = values.property.match(/\(([^)]+)\)$/);
-										if (match) {
-											frm.set_value("property_id", match[1]);
-											frm.save();
-										}
-									},
-									__("Select Property"),
-									__("Set Property")
-								);
-							}
 							frm.reload_doc();
 						}
 					}
 				});
 			}).addClass("btn-primary");
+
+			// Select Active Property from Channex
+			frm.add_custom_button(__("Select Property"), () => {
+				frappe.call({
+					method: "hospitality_core.hospitality_core.doctype.ota_settings.ota_settings.get_channex_properties",
+					freeze: true,
+					freeze_message: __("Fetching properties from Channex..."),
+					callback: (r) => {
+						if (r.message && r.message.properties) {
+							let props = r.message.properties;
+							if (!props.length) {
+								frappe.msgprint(__("No properties found in this Channex account."));
+								return;
+							}
+							let options = props.map((p) => `${p.title} (${p.id})`);
+							let currentVal = options.find(o => o.includes(frm.doc.property_id));
+							frappe.prompt(
+								[{
+									label: __("Select Property to Connect"),
+									fieldname: "property",
+									fieldtype: "Select",
+									options: options,
+									default: currentVal || options[0],
+									description: __("Select the Channex property you want to sync with ERPNext"),
+									reqd: 1
+								}],
+								(values) => {
+									let match = values.property.match(/\(([^)]+)\)$/);
+									if (match) {
+										frm.set_value("property_id", match[1]);
+										frm.save().then(() => {
+											frappe.show_alert({ message: __("Active property updated to {0}! Syncing room types...", [match[1]]), indicator: "green" });
+											frappe.call({
+												method: "hospitality_core.hospitality_core.doctype.ota_settings.ota_settings.fetch_room_types_from_ota",
+												freeze: true,
+												freeze_message: __("Syncing room types for new property..."),
+												callback: () => frm.reload_doc()
+											});
+										});
+									}
+								},
+								__("Select Active Channex Property"),
+								__("Save & Sync Rooms")
+							);
+						}
+					}
+				});
+			});
 
 			
 			// Fetch Rooms from OTA button

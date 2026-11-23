@@ -115,6 +115,25 @@ def test_connection():
 
 
 @frappe.whitelist()
+def get_channex_properties():
+	"""Returns list of properties available for this Channex API key."""
+	headers = get_api_headers()
+	url = get_api_url("properties")
+	try:
+		resp = requests.get(url, headers=headers, timeout=15)
+		if resp.status_code in (200, 201):
+			data = resp.json().get("data", [])
+			return {
+				"status": "success",
+				"properties": [{"id": p.get("id"), "title": p.get("attributes", {}).get("title", "") or p.get("id")} for p in data]
+			}
+		else:
+			frappe.throw(_("Channex returned HTTP {0}: {1}").format(resp.status_code, resp.text[:200]))
+	except Exception as e:
+		frappe.throw(_("Could not fetch properties: {0}").format(str(e)))
+
+
+@frappe.whitelist()
 def fetch_room_types_from_ota():
 	"""
 	Fetches room types from connected OTA / Channex property and synchronizes
