@@ -32,5 +32,19 @@ frappe.ui.form.on("OTA Reservation", {
 				);
 			}).addClass("btn-primary");
 		}
+
+		if (!frm.is_new()) {
+			frm.add_custom_button(__("Print Booking Voucher"), () => {
+				const isUuid = (s) => typeof s === "string" && s.trim().length === 36 && s.indexOf("-") !== -1;
+				const roomType = (frm.doc.room_type_name && !isUuid(frm.doc.room_type_name)) ? frm.doc.room_type_name : "Demo Double";
+				const ratePlan = (frm.doc.rate_plan_name && !isUuid(frm.doc.rate_plan_name)) ? frm.doc.rate_plan_name : "Standard Rate";
+
+				if (window.fd_print_ota_voucher) {
+					window.fd_print_ota_voucher(frm.doc, roomType, ratePlan);
+				} else {
+					window.open(`/printview?doctype=OTA%20Reservation&name=${encodeURIComponent(frm.doc.name)}&format=OTA%20Booking%20Voucher&trigger_print=1`, "_blank");
+				}
+			});
+		}
 	}
 });

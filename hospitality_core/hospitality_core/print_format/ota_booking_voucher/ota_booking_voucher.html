@@ -1,0 +1,164 @@
+{% set hotel_name = frappe.db.get_default("company") or "Sky Hotel & Luxury Suites" %}
+{% set channel_name = doc.channel_name or "OTA" %}
+{% set ch_lower = channel_name.lower() %}
+{% set channel_color = "#0284c7" %}
+{% if "makemytrip" in ch_lower or "mmt" in ch_lower %}
+    {% set channel_color = "#e11d48" %}
+{% elif "booking" in ch_lower %}
+    {% set channel_color = "#003580" %}
+{% elif "airbnb" in ch_lower %}
+    {% set channel_color = "#ff385c" %}
+{% elif "expedia" in ch_lower %}
+    {% set channel_color = "#00355f" %}
+{% elif "agoda" in ch_lower %}
+    {% set channel_color = "#2b3990" %}
+{% endif %}
+
+{% set is_accepted = doc.status == "Accepted" or doc.hotel_reservation %}
+{% set status_text = "CONFIRMED & ACCEPTED" if is_accepted else ("CANCELLED" if doc.status == "Cancelled" else "PENDING ACCEPTANCE") %}
+{% set status_color = "#16a34a" if is_accepted else ("#dc2626" if doc.status == "Cancelled" else "#f59e0b") %}
+
+{% set sym = "₹ " if doc.currency == "INR" else ("$ " if doc.currency == "USD" else ("£ " if doc.currency == "GBP" else ("€ " if doc.currency == "EUR" else (doc.currency ~ " " if doc.currency else "₹ ")))) %}
+
+<div class="voucher-print-container" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; max-width: 820px; margin: 0 auto; padding: 20px 25px; line-height: 1.5;">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 20px;">
+        <div>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; text-transform: uppercase;">{{ hotel_name }}</h1>
+            <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.8px; color: #475569; text-transform: uppercase; margin-top: 3px;">Official OTA Reservation Voucher & Guest Confirmation</div>
+            <div style="display: inline-block; background: {{ channel_color }}; color: #ffffff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;">
+                {{ channel_name }} Partner Booking
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 19px; font-weight: 900; color: #0f172a;">{{ doc.ota_booking_id or doc.name }}</div>
+            <div>
+                <span style="display: inline-block; border: 2px solid {{ status_color }}; color: {{ status_color }}; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 4px; margin-top: 4px; text-transform: uppercase;">
+                    {{ status_text }}
+                </span>
+            </div>
+            {% if doc.hotel_reservation %}
+            <div style="font-size: 11px; color: #0284c7; font-weight: 700; margin-top: 4px;">Hotel Res: {{ doc.hotel_reservation }}</div>
+            {% endif %}
+            <div style="font-size: 10px; color: #64748b; margin-top: 3px;">Printed: {{ frappe.utils.now_datetime().strftime('%d-%b-%Y %H:%M') }}</div>
+        </div>
+    </div>
+
+    <!-- 2-Column Grid: Guest & Stay Details -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px;">
+        <!-- Guest Information -->
+        <div>
+            <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #0f172a; padding: 5px 10px; margin-bottom: 8px;">
+                👤 Guest Information
+            </div>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; font-size: 12px;">
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #f1f5f9;">
+                    <span style="color: #64748b;">Primary Guest:</span>
+                    <b style="color: #0f172a;">{{ doc.guest_name or "—" }}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #f1f5f9;">
+                    <span style="color: #64748b;">Mobile Phone:</span>
+                    <b style="color: #0f172a;">{{ doc.guest_phone or "—" }}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #f1f5f9;">
+                    <span style="color: #64748b;">Email Address:</span>
+                    <b style="color: #0f172a;">{{ doc.guest_email or "—" }}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                    <span style="color: #64748b;">Occupancy:</span>
+                    <b style="color: #0f172a;">{{ doc.adults or 1 }} Adult(s){% if doc.children %}, {{ doc.children }} Child(ren){% endif %}</b>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stay Details -->
+        <div>
+            <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #0f172a; padding: 5px 10px; margin-bottom: 8px;">
+                🏨 Stay & Room Information
+            </div>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; font-size: 12px;">
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #f1f5f9;">
+                    <span style="color: #64748b;">Check-In Date:</span>
+                    <b style="color: #0f172a;">{{ doc.check_in_date }} (from 14:00)</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #f1f5f9;">
+                    <span style="color: #64748b;">Check-Out Date:</span>
+                    <b style="color: #0f172a;">{{ doc.check_out_date }} (by 11:00)</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #f1f5f9;">
+                    <span style="color: #64748b;">Duration:</span>
+                    <b style="color: #0f172a;">{{ doc.nights or 1 }} Night(s)</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                    <span style="color: #64748b;">Room Category:</span>
+                    <b style="color: #0284c7;">{{ doc.room_type_name or "Demo Double" }}</b>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Breakdown -->
+    <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #0f172a; padding: 5px 10px; margin-bottom: 8px;">
+        💳 Tariff & Financial Settlement
+    </div>
+    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px;">
+        <thead>
+            <tr style="background: #f8fafc;">
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Description</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Booking Channel</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Payment Mode & Status</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Total Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="border: 1px solid #cbd5e1; padding: 10px 12px;">
+                    <b>Room Accommodation Charges</b><br>
+                    <span style="font-size: 11px; color: #64748b;">{{ doc.nights or 1 }} Night(s) · {{ doc.room_type_name or "Demo Double" }} ({{ doc.rate_plan_name or "Standard Rate" }})</span>
+                </td>
+                <td style="border: 1px solid #cbd5e1; padding: 10px 12px;"><b>{{ channel_name }}</b></td>
+                <td style="border: 1px solid #cbd5e1; padding: 10px 12px;">
+                    <b>{{ doc.payment_collect or "OTA Collect" }}</b><br>
+                    <span style="font-size: 11px; color: #16a34a; font-weight: 700;">● {{ doc.payment_status or "Paid Online" }}</span>
+                </td>
+                <td style="border: 1px solid #cbd5e1; padding: 10px 12px; text-align: right; font-size: 15px; font-weight: 900; color: #0f172a;">
+                    {{ sym }}{{ frappe.utils.fmt_money(doc.total_amount or 0) }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if doc.remarks %}
+    <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #92400e; margin-bottom: 16px;">
+        <b>📌 Special Requests / Remarks:</b> {{ doc.remarks }}
+    </div>
+    {% endif %}
+
+    <!-- Policies -->
+    <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #0f172a; padding: 5px 10px; margin-bottom: 8px;">
+        📜 Guest Stay Policies & House Rules
+    </div>
+    <ol style="font-size: 11px; color: #64748b; line-height: 1.5; margin: 0 0 20px; padding-left: 18px;">
+        <li><b>Mandatory Photo ID:</b> Valid government-issued photo ID (Aadhaar, Passport, Driving License, Voter ID) is mandatory for all adult occupants at registration.</li>
+        <li><b>Check-In & Check-Out:</b> Check-in starts at 14:00 PM and check-out is by 11:00 AM. Early arrivals or late departures are subject to room availability.</li>
+        <li><b>House Rules:</b> All guest rooms are strictly non-smoking. Guests are liable for any damages to room furniture or hotel property.</li>
+        <li><b>Settlement of Extras:</b> Incidental expenses, room service, or restaurant dining must be settled directly with the reception prior to departure.</li>
+    </ol>
+
+    <!-- Signatures -->
+    <div style="display: flex; justify-content: space-between; margin-top: 40px; page-break-inside: avoid;">
+        <div style="width: 250px; text-align: center;">
+            <div style="border-top: 1px solid #94a3b8; padding-top: 5px; font-weight: 700; font-size: 12px; color: #334155;">Guest Signature</div>
+            <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">I accept room allotment & stay policies</div>
+        </div>
+        <div style="width: 250px; text-align: center;">
+            <div style="border-top: 1px solid #94a3b8; padding-top: 5px; font-weight: 700; font-size: 12px; color: #334155;">Front Desk Manager / Reception</div>
+            <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Authorized Hotel Representative & Stamp</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 10px; color: #94a3b8; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">
+        {{ hotel_name }} · Official Computer-Generated Booking Voucher · Generated via Front Desk Console
+    </div>
+</div>

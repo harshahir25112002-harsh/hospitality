@@ -723,4 +723,630 @@ Object.assign(FrontDeskConsole.prototype, {
             frappe.msgprint({ title: __("Night Audit Error"), message: err.message || String(err), indicator: "red" });
         });
     },
+
+    // ---------------- OTA RESERVATION DETAILS & VOUCHER PRINT ----------------
+    dialog_ota_details(name) {
+        const me = this;
+        frappe.db.get_doc("OTA Reservation", name).then((doc) => {
+            const isUuid = (s) => typeof s === "string" && s.trim().length === 36 && s.indexOf("-") !== -1;
+            const roomType = (doc.room_type_name && !isUuid(doc.room_type_name)) ? doc.room_type_name : "Demo Double";
+            const ratePlan = (doc.rate_plan_name && !isUuid(doc.rate_plan_name)) ? doc.rate_plan_name : "Standard Rate";
+
+            const sym = doc.currency === "INR" ? "₹" : (doc.currency === "GBP" ? "£" : (doc.currency === "USD" ? "$" : (doc.currency === "EUR" ? "€" : (doc.currency ? doc.currency + " " : "₹ "))));
+            const formatMoney = (val) => `${sym} ${frappe.format(val || 0, { fieldtype: "Currency" })}`;
+
+            // Channel theme colors & branding
+            const ch = (doc.channel_name || "OTA").toLowerCase();
+            let channelBg = "linear-gradient(135deg, #0284c7, #0369a1)";
+            let channelTag = doc.channel_name || "OTA Channel";
+            if (ch.includes("makemytrip") || ch.includes("mmt")) {
+                channelBg = "linear-gradient(135deg, #e11d48, #be123c)";
+                channelTag = "MakeMyTrip";
+            } else if (ch.includes("booking")) {
+                channelBg = "linear-gradient(135deg, #003580, #00224f)";
+                channelTag = "Booking.com";
+            } else if (ch.includes("airbnb")) {
+                channelBg = "linear-gradient(135deg, #ff385c, #e00b41)";
+                channelTag = "Airbnb";
+            } else if (ch.includes("expedia")) {
+                channelBg = "linear-gradient(135deg, #00355f, #0c2340)";
+                channelTag = "Expedia";
+            } else if (ch.includes("agoda")) {
+                channelBg = "linear-gradient(135deg, #2b3990, #1b2660)";
+                channelTag = "Agoda";
+            } else if (ch.includes("goibibo")) {
+                channelBg = "linear-gradient(135deg, #ec5b24, #c94411)";
+                channelTag = "Goibibo";
+            }
+
+            // Status Badge
+            const isAccepted = doc.status === "Accepted" || !!doc.hotel_reservation;
+            const isCancelled = doc.status === "Cancelled";
+            const statusHtml = isAccepted
+                ? `<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span>✓</span> ${__("Accepted & Confirmed")}</span>`
+                : (isCancelled
+                    ? `<span style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span>✕</span> ${__("Cancelled")}</span>`
+                    : `<span style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span style="display:inline-block;width:8px;height:8px;background:#f59e0b;border-radius:50%;"></span> ${__("Pending Acceptance")}</span>`);
+
+            // Format phone for WhatsApp
+            const cleanPhone = (doc.guest_phone || "").replace(/[^0-9]/g, "");
+
+            const d = new frappe.ui.Dialog({
+                title: `${channelTag} · ${doc.ota_booking_id || doc.name}`,
+                size: "large",
+                fields: [{ fieldtype: "HTML", fieldname: "body" }]
+            });
+
+            const html = `
+                <div class="fd-ota-voucher-modal" style="font-family:inherit;padding:2px 0;">
+                    <!-- Header Banner -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;padding:16px 20px;border-radius:12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <div style="background:${channelBg};color:#ffffff;font-weight:800;font-size:13px;padding:8px 14px;border-radius:8px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 4px rgba(0,0,0,0.12);">
+                                ${FD.esc(channelTag)}
+                            </div>
+                            <div>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span style="font-size:18px;font-weight:800;color:#0f172a;letter-spacing:0.3px;">${FD.esc(doc.ota_booking_id || doc.name)}</span>
+                                    <button type="button" class="btn btn-default btn-xs" style="padding:1px 6px;font-size:11px;" onclick="navigator.clipboard.writeText('${doc.ota_booking_id || doc.name}'); frappe.show_alert({message: __('Booking ID Copied!'), indicator: 'green'});" title="${__("Copy Booking ID")}">📋</button>
+                                </div>
+                                <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                                    ${__("Received via Channel Manager")}: <b>${frappe.datetime.str_to_user(doc.received_at || doc.creation)}</b>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            ${statusHtml}
+                            ${doc.hotel_reservation ? `
+                                <div style="margin-top:6px;font-size:12px;font-weight:700;color:#0284c7;">
+                                    ${__("Hotel Reservation")}: <a href="/app/hotel-reservation/${encodeURIComponent(doc.hotel_reservation)}" target="_blank" style="text-decoration:underline;color:#0284c7;">${FD.esc(doc.hotel_reservation)}</a>
+                                </div>` : ""}
+                        </div>
+                    </div>
+
+                    <!-- 2 Grid Cards: Guest & Stay Details -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                        <!-- Guest Information -->
+                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding-bottom:10px;margin-bottom:12px;">
+                                <span style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;">👤 ${__("Guest Information")}</span>
+                                <span style="background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${doc.adults || 1} Adult(s)${doc.children ? `, ${doc.children} Child(ren)` : ""}</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="color:#64748b;">${__("Primary Guest")}:</span>
+                                    <b style="color:#0f172a;font-size:14px;">${FD.esc(doc.guest_name || "—")}</b>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="color:#64748b;">${__("Mobile Phone")}:</span>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <b style="color:#0f172a;">${FD.esc(doc.guest_phone || "—")}</b>
+                                        ${cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="btn btn-default btn-xs" style="color:#16a34a;font-weight:700;padding:0 5px;" title="${__("Open WhatsApp Chat")}">WA</a>` : ""}
+                                    </div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="color:#64748b;">${__("Email Address")}:</span>
+                                    <span style="color:#334155;font-weight:600;max-width:210px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;" title="${FD.esc(doc.guest_email || '')}">${FD.esc(doc.guest_email || "—")}</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="color:#64748b;">${__("Total Occupancy")}:</span>
+                                    <b style="color:#0f172a;">${(parseInt(doc.adults, 10) || 1) + (parseInt(doc.children, 10) || 0)} ${__("Guests")} (${doc.adults || 1}A, ${doc.children || 0}C)</b>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stay Details -->
+                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding-bottom:10px;margin-bottom:12px;">
+                                <span style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;">🏨 ${__("Stay & Room Details")}</span>
+                                <span style="background:#f1f5f9;color:#334155;font-size:11px;font-weight:800;padding:2px 8px;border-radius:10px;">${doc.nights || 1} ${__("Night(s)")}</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="color:#64748b;">${__("Check-In")}:</span>
+                                    <b style="color:#0f172a;">${FD.date(doc.check_in_date)} <span style="font-size:11px;font-weight:normal;color:#64748b;">(from 14:00)</span></b>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="color:#64748b;">${__("Check-Out")}:</span>
+                                    <b style="color:#0f172a;">${FD.date(doc.check_out_date)} <span style="font-size:11px;font-weight:normal;color:#64748b;">(by 11:00)</span></b>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="color:#64748b;">${__("Room Category")}:</span>
+                                    <b style="color:#0284c7;font-weight:800;">${FD.esc(roomType)}</b>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="color:#64748b;">${__("Rate / Meal Plan")}:</span>
+                                    <span style="background:#f8fafc;border:1px solid #e2e8f0;padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px;color:#334155;">${FD.esc(ratePlan)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial & Payout Summary Card -->
+                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                        <div style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;">
+                            💳 ${__("Financial Settlement & Tariff Breakdown")}
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+                            <div>
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Total Booking Amount")}</div>
+                                <div style="font-size:19px;font-weight:900;color:#0f172a;margin-top:3px;">${formatMoney(doc.total_amount)}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("OTA Commission")}</div>
+                                <div style="font-size:16px;font-weight:800;color:#dc2626;margin-top:4px;">${formatMoney(doc.commission)}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Net Hotel Payout")}</div>
+                                <div style="font-size:16px;font-weight:800;color:#16a34a;margin-top:4px;">${formatMoney((doc.total_amount || 0) - (doc.commission || 0))}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Collection & Status")}</div>
+                                <div style="font-size:13px;font-weight:800;color:#1e293b;margin-top:2px;">${FD.esc(doc.payment_collect || "OTA Collect")}</div>
+                                <div style="font-size:11px;font-weight:700;color:#16a34a;margin-top:2px;">● ${FD.esc(doc.payment_status || "Paid Online")}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${doc.remarks ? `
+                    <!-- Special Requests -->
+                    <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400e;margin-bottom:16px;">
+                        <b style="display:inline-block;margin-bottom:4px;">📌 ${__("Guest Special Requests / Notes")}:</b>
+                        <div>${FD.esc(doc.remarks)}</div>
+                    </div>` : ""}
+
+                    <!-- Raw JSON Payload Accordion (Collapsed) -->
+                    <details style="margin-top:8px;font-size:12px;color:#64748b;border-top:1px dashed #e2e8f0;padding-top:10px;">
+                        <summary style="cursor:pointer;font-weight:600;padding:4px 0;user-select:none;">
+                            🔍 ${__("Technical Channel Payload (Channex Raw JSON)")}
+                        </summary>
+                        <pre style="background:#0f172a;color:#f8fafc;padding:12px 14px;border-radius:8px;max-height:160px;overflow:auto;margin-top:8px;font-size:11px;line-height:1.45;">${FD.esc(doc.raw_payload || "{}")}</pre>
+                    </details>
+                </div>
+            `;
+
+            d.fields_dict.body.$wrapper.html(html);
+
+            // Print Voucher Action
+            d.set_secondary_action_label(`🖨️ ${__("Print Booking Voucher")}`);
+            d.set_secondary_action(() => {
+                me.print_ota_voucher(doc, roomType, ratePlan);
+            });
+
+            // Primary Workflow Action
+            if (!isAccepted && !isCancelled) {
+                d.set_primary_action_label(`⚡ ${__("Accept Booking")}`);
+                d.set_primary_action(() => {
+                    d.hide();
+                    FD.call("hospitality_core.api.console.accept_ota_booking", {
+                        ota_reservation_name: doc.name
+                    }, { freeze: true, freeze_message: __("Accepting booking & creating Hotel Reservation...") })
+                        .then((res) => {
+                            frappe.show_alert({ message: __("Accepted! Created Hotel Reservation {0}", [res.reservation]), indicator: "green" });
+                            me.load_data(true);
+                        });
+                });
+            } else if (doc.hotel_reservation) {
+                d.set_primary_action_label(`🛎️ ${__("View Hotel Reservation")}`);
+                d.set_primary_action(() => {
+                    d.hide();
+                    me.dialog_reservation(doc.hotel_reservation);
+                });
+            }
+
+            d.show();
+        });
+    },
+
+    // ---------------- PRINTABLE OTA VOUCHER FORMAT ----------------
+    print_ota_voucher(doc, roomType, ratePlan) {
+        const hotelName = frappe.boot.sysdefaults.company || frappe.defaults.get_default("company") || "Sky Hotel & Luxury Suites";
+        const sym = doc.currency === "INR" ? "₹" : (doc.currency === "GBP" ? "£" : (doc.currency === "USD" ? "$" : (doc.currency === "EUR" ? "€" : (doc.currency ? doc.currency + " " : "₹ "))));
+        const formatMoney = (val) => `${sym} ${frappe.format(val || 0, { fieldtype: "Currency" })}`;
+
+        // Channel branding
+        const ch = (doc.channel_name || "OTA").toLowerCase();
+        let channelColor = "#0284c7";
+        let channelTitle = doc.channel_name || "OTA";
+        if (ch.includes("makemytrip") || ch.includes("mmt")) {
+            channelColor = "#e11d48";
+            channelTitle = "MakeMyTrip";
+        } else if (ch.includes("booking")) {
+            channelColor = "#003580";
+            channelTitle = "Booking.com";
+        } else if (ch.includes("airbnb")) {
+            channelColor = "#ff385c";
+            channelTitle = "Airbnb";
+        } else if (ch.includes("expedia")) {
+            channelColor = "#00355f";
+            channelTitle = "Expedia";
+        } else if (ch.includes("agoda")) {
+            channelColor = "#2b3990";
+            channelTitle = "Agoda";
+        }
+
+        const isAccepted = doc.status === "Accepted" || !!doc.hotel_reservation;
+        const statusText = isAccepted ? "CONFIRMED & ACCEPTED" : (doc.status === "Cancelled" ? "CANCELLED" : "PENDING ACCEPTANCE");
+        const statusColor = isAccepted ? "#16a34a" : (doc.status === "Cancelled" ? "#dc2626" : "#f59e0b");
+
+        const voucherHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Booking Confirmation Voucher · ${doc.ota_booking_id || doc.name}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+            background: #f1f5f9;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .no-print-bar {
+            background: #1e293b;
+            color: #ffffff;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .no-print-bar button {
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 8px 18px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-print { background: #2563eb; color: #ffffff; }
+        .btn-print:hover { background: #1d4ed8; }
+        .btn-close { background: #475569; color: #ffffff; margin-left: 8px; }
+        .btn-close:hover { background: #334155; }
+
+        .voucher-sheet {
+            max-width: 820px;
+            margin: 24px auto;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            padding: 36px 40px;
+        }
+
+        .header-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+        }
+        .hotel-brand h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+        .hotel-brand .doc-type {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #475569;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .channel-tag {
+            display: inline-block;
+            background: ${channelColor};
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        .ref-box {
+            text-align: right;
+        }
+        .ref-number {
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: 0.5px;
+        }
+        .status-badge {
+            display: inline-block;
+            border: 2px solid ${statusColor};
+            color: ${statusColor};
+            font-size: 11px;
+            font-weight: 900;
+            padding: 3px 10px;
+            border-radius: 4px;
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .meta-text {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .section-header {
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #475569;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #0f172a;
+            padding: 6px 12px;
+            margin: 20px 0 12px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .info-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 14px 16px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 13px;
+            border-bottom: 1px dashed #f1f5f9;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-lbl {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .info-val {
+            color: #0f172a;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+        .table-custom th, .table-custom td {
+            border: 1px solid #cbd5e1;
+            padding: 10px 14px;
+        }
+        .table-custom th {
+            background: #f8fafc;
+            font-weight: 800;
+            color: #334155;
+            text-align: left;
+        }
+
+        .notice-box {
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #92400e;
+            margin-top: 14px;
+        }
+
+        .policy-list {
+            font-size: 11px;
+            color: #64748b;
+            line-height: 1.6;
+            margin: 12px 0 0;
+            padding-left: 18px;
+        }
+
+        .sig-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 48px;
+            page-break-inside: avoid;
+        }
+        .sig-block {
+            width: 260px;
+            text-align: center;
+        }
+        .sig-line {
+            border-top: 1px solid #94a3b8;
+            margin-bottom: 6px;
+            padding-top: 6px;
+            font-weight: 700;
+            font-size: 12px;
+            color: #334155;
+        }
+        .sig-sub {
+            font-size: 10px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        .footer-note {
+            margin-top: 32px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+            font-size: 10px;
+            color: #94a3b8;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media print {
+            body { background: #ffffff; }
+            .no-print-bar { display: none !important; }
+            .voucher-sheet {
+                max-width: 100%;
+                margin: 0;
+                padding: 15mm;
+                border: none;
+                box-shadow: none;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print-bar">
+        <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;">
+            <span>🏨 Official Booking Voucher Preview</span>
+            <span style="font-size:12px;font-weight:normal;color:#94a3b8;">· Click Print or press Ctrl+P</span>
+        </div>
+        <div>
+            <button type="button" class="btn-print" onclick="window.print()">🖨️ Print Voucher</button>
+            <button type="button" class="btn-close" onclick="window.close()">✕ Close</button>
+        </div>
+    </div>
+
+    <div class="voucher-sheet">
+        <!-- Header -->
+        <div class="header-wrap">
+            <div class="hotel-brand">
+                <h1>${hotelName}</h1>
+                <div class="doc-type">Official OTA Reservation Voucher & Guest Confirmation</div>
+                <div class="channel-tag">${channelTitle} Partner Booking</div>
+            </div>
+            <div class="ref-box">
+                <div class="ref-number">${doc.ota_booking_id || doc.name}</div>
+                <div><span class="status-badge">${statusText}</span></div>
+                ${doc.hotel_reservation ? `<div class="meta-text" style="color:#0284c7;font-weight:700;">Hotel Res: ${doc.hotel_reservation}</div>` : ""}
+                <div class="meta-text">Issued: ${new Date().toLocaleString()}</div>
+            </div>
+        </div>
+
+        <!-- 2 Columns: Guest & Stay Details -->
+        <div class="grid-2">
+            <div>
+                <div class="section-header">👤 Guest Information</div>
+                <div class="info-card">
+                    <div class="info-row"><span class="info-lbl">Primary Guest:</span><span class="info-val">${doc.guest_name || "—"}</span></div>
+                    <div class="info-row"><span class="info-lbl">Mobile Phone:</span><span class="info-val">${doc.guest_phone || "—"}</span></div>
+                    <div class="info-row"><span class="info-lbl">Email Address:</span><span class="info-val">${doc.guest_email || "—"}</span></div>
+                    <div class="info-row"><span class="info-lbl">Total Guests:</span><span class="info-val">${(parseInt(doc.adults, 10) || 1) + (parseInt(doc.children, 10) || 0)} Guests (${doc.adults || 1} Adult, ${doc.children || 0} Child)</span></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-header">🏨 Stay & Room Information</div>
+                <div class="info-card">
+                    <div class="info-row"><span class="info-lbl">Check-In Date:</span><span class="info-val">${doc.check_in_date} (from 14:00)</span></div>
+                    <div class="info-row"><span class="info-lbl">Check-Out Date:</span><span class="info-val">${doc.check_out_date} (by 11:00)</span></div>
+                    <div class="info-row"><span class="info-lbl">Duration of Stay:</span><span class="info-val">${doc.nights || 1} Night(s)</span></div>
+                    <div class="info-row"><span class="info-lbl">Room Category:</span><span class="info-val" style="color:#0284c7;">${roomType}</span></div>
+                    <div class="info-row"><span class="info-lbl">Rate / Meal Plan:</span><span class="info-val">${ratePlan}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing & Financial Breakdown -->
+        <div class="section-header">💳 Tariff & Financial Settlement</div>
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Booking Channel</th>
+                    <th>Payment Mode & Status</th>
+                    <th style="text-align:right;">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <b>Room Accommodation Charges</b><br>
+                        <span style="font-size:11px;color:#64748b;">${doc.nights || 1} Night(s) · ${roomType} (${ratePlan})</span>
+                    </td>
+                    <td><b>${channelTitle}</b></td>
+                    <td>
+                        <b>${doc.payment_collect || "OTA Collect"}</b><br>
+                        <span style="font-size:11px;color:#16a34a;font-weight:700;">● ${doc.payment_status || "Paid Online"}</span>
+                    </td>
+                    <td style="text-align:right;font-size:16px;font-weight:900;color:#0f172a;">${formatMoney(doc.total_amount)}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        ${doc.remarks ? `
+        <!-- Special Requests -->
+        <div class="notice-box">
+            <b>📌 Special Requests / Remarks:</b> ${doc.remarks}
+        </div>` : ""}
+
+        <!-- Terms & Policies -->
+        <div class="section-header">📜 Guest Stay Policies & House Rules</div>
+        <ol class="policy-list">
+            <li><b>Mandatory Identification:</b> Valid government-issued photo ID with residential address (Aadhaar, Passport, Driving License, Voter ID) is mandatory for all adult occupants upon check-in.</li>
+            <li><b>Check-In & Check-Out:</b> Standard check-in time is 14:00 PM and check-out time is 11:00 AM. Early check-in or late check-out is subject to room availability and standard hotel tariff.</li>
+            <li><b>Property House Rules:</b> All guest rooms are strictly non-smoking. Guests are liable for any damages to room furniture, equipment, or hotel fixtures during their stay.</li>
+            <li><b>Settlement of Extras:</b> Incidental charges including room service, laundry, restaurant dining, or minibar usage must be settled directly with the reception prior to check-out.</li>
+        </ol>
+
+        <!-- Signature Section -->
+        <div class="sig-section">
+            <div class="sig-block">
+                <div class="sig-line">Guest Signature</div>
+                <div class="sig-sub">I accept the room allotment & hotel stay policies</div>
+            </div>
+            <div class="sig-block">
+                <div class="sig-line">Front Desk Manager / Reception</div>
+                <div class="sig-sub">Authorized Hotel Representative & Stamp</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-note">
+            ${hotelName} · Official Computer-Generated Booking Voucher · Generated via Front Desk Console
+        </div>
+    </div>
+</body>
+</html>
+        `;
+
+        const printWindow = window.open("", "_blank");
+        printWindow.document.write(voucherHtml);
+        printWindow.document.close();
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+        }, 300);
+    }
 });
+
+// Global accessor for standalone voucher printing
+window.fd_print_ota_voucher = function(doc, roomType, ratePlan) {
+    if (window.cur_fd_console && window.cur_fd_console.print_ota_voucher) {
+        window.cur_fd_console.print_ota_voucher(doc, roomType, ratePlan);
+    } else {
+        FrontDeskConsole.prototype.print_ota_voucher(doc, roomType, ratePlan);
+    }
+};

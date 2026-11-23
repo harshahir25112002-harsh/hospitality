@@ -425,7 +425,7 @@ Object.assign(FrontDeskConsole.prototype, {
                                                 <button class="btn btn-default btn-xs fd-btn-wa" data-name="${FD.esc(r.name)}" data-res="${FD.esc(r.hotel_reservation || '')}" title="${__("WhatsApp Guest & Pre-Checkin Link")}">
                                                     <span style="color:#16a34a;font-weight:800;">WA</span>
                                                 </button>
-                                                <button class="btn btn-default btn-xs fd-btn-raw" data-name="${FD.esc(r.name)}" title="${__("View Raw Details")}">
+                                                <button class="btn btn-default btn-xs fd-btn-raw" data-name="${FD.esc(r.name)}" title="${__("View Booking Voucher & Details")}">
                                                     ${FD.icon("eye")}
                                                 </button>
                                             </td>
@@ -578,11 +578,11 @@ Object.assign(FrontDeskConsole.prototype, {
             }
         });
 
-        // View Raw OTA Details
+        // View OTA Reservation Voucher & Details (Eye Button & Row Click)
         $tab.on("click", ".fd-btn-raw, .fd-ota-row", function (e) {
-            if ($(e.target).closest(".fd-btn-accept, .fd-btn-view-res, .fd-btn-checkin-ota").length) return;
+            if ($(e.target).closest(".fd-btn-accept, .fd-btn-view-res, .fd-btn-checkin-ota, .fd-btn-wa").length) return;
             const name = $(this).data("name") || $(this).closest("tr").data("name");
-            if (name) fd_open_doc_popup("OTA Reservation", name);
+            if (name) me.dialog_ota_details(name);
         });
 
         load();
