@@ -404,7 +404,26 @@ def save_ota_reservation(data, raw_data="", revision_id=None, room_type_map=None
 
 	doc.flags.ignore_permissions = True
 	doc.save()
+
+	# If this is a cancellation, automatically cancel any existing Hotel Reservation
+	if status == "Cancelled" and doc.hotel_reservation:
+		try:
+			res_doc = frappe.get_doc("Hotel Reservation", doc.hotel_reservation)
+			if res_doc.status != "Cancelled":
+				res_doc.status = "Cancelled"
+				res_doc.flags.ignore_permissions = True
+				res_doc.save()
+		except Exception:
+			pass
+
 	frappe.db.commit()
+
+	# Immediately trigger real-time availability update back to Channex
+	if doc.room_type_name and doc.check_in_date and doc.check_out_date:
+		try:
+			push_room_type_availability_to_ota(doc.room_type_name, doc.check_in_date, doc.check_out_date)
+		except Exception:
+			pass
 
 	return doc.name
 
