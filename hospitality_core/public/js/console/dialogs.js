@@ -1348,27 +1348,12 @@ window.fd_dialog_ota_details = function(name) {
                     </div>
                 `;
 
-                const d = new frappe.ui.Dialog({
-                    title: `${channelTag} · ${doc.ota_booking_id || doc.name}`,
-                    size: "large",
-                    fields: [{ fieldtype: "HTML", fieldname: "body", options: html }]
-                });
+                let primary_label = null;
+                let primary_action = null;
 
-                d.show();
-                if (d.get_field("body") && d.get_field("body").$wrapper) {
-                    d.get_field("body").$wrapper.html(html);
-                }
-
-                // Print Voucher Action
-                d.set_secondary_action_label(`🖨️ ${__("Print Booking Voucher")}`);
-                d.set_secondary_action(() => {
-                    window.fd_print_ota_voucher(doc, roomType, ratePlan);
-                });
-
-                // Primary Workflow Action
                 if (!isAccepted && !isCancelled) {
-                    d.set_primary_action_label(`⚡ ${__("Accept Booking")}`);
-                    d.set_primary_action(() => {
+                    primary_label = `⚡ ${__("Accept Booking")}`;
+                    primary_action = () => {
                         d.hide();
                         FD.call("hospitality_core.api.console.accept_ota_booking", {
                             ota_reservation_name: doc.name
@@ -1382,16 +1367,45 @@ window.fd_dialog_ota_details = function(name) {
                             .catch((err) => {
                                 frappe.msgprint({ title: __("Accept Failed"), message: err.message || String(err), indicator: "red" });
                             });
-                    });
+                    };
                 } else if (doc.hotel_reservation) {
-                    d.set_primary_action_label(`🛎️ ${__("View Hotel Reservation")}`);
-                    d.set_primary_action(() => {
+                    primary_label = `🛎️ ${__("View Hotel Reservation")}`;
+                    primary_action = () => {
                         d.hide();
                         if (window.cur_fd_console && window.cur_fd_console.dialog_reservation) {
                             window.cur_fd_console.dialog_reservation(doc.hotel_reservation);
                         } else {
                             frappe.set_route("Form", "Hotel Reservation", doc.hotel_reservation);
                         }
+                    };
+                }
+
+                const d = new frappe.ui.Dialog({
+                    title: `${channelTag} · ${doc.ota_booking_id || doc.name}`,
+                    size: "large",
+                    fields: [{ fieldtype: "HTML", fieldname: "body", options: html }],
+                    primary_action_label: primary_label,
+                    primary_action: primary_action,
+                    secondary_action_label: `🖨️ ${__("Print Booking Voucher")}`,
+                    secondary_action: () => {
+                        window.fd_print_ota_voucher(doc, roomType, ratePlan);
+                    }
+                });
+
+                d.show();
+                if (d.get_field("body") && d.get_field("body").$wrapper) {
+                    d.get_field("body").$wrapper.html(html);
+                }
+
+                if (primary_label && primary_action && d.set_primary_action) {
+                    d.set_primary_action(primary_label, primary_action);
+                }
+                if (d.set_secondary_action_label) {
+                    d.set_secondary_action_label(`🖨️ ${__("Print Booking Voucher")}`);
+                }
+                if (d.set_secondary_action) {
+                    d.set_secondary_action(() => {
+                        window.fd_print_ota_voucher(doc, roomType, ratePlan);
                     });
                 }
             } catch (err) {
