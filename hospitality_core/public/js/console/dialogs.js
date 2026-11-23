@@ -541,8 +541,12 @@ Object.assign(FrontDeskConsole.prototype, {
     // ---------------- SETTINGS ----------------
     dialog_hotel_settings() {
         const me = this;
-        frappe.db.get_doc("Hotel Settings").then((s) => {
-            const d = FD.dialog({
+        frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Hotel Settings", name: "Hotel Settings" },
+            callback: (r) => {
+                const s = r.message || {};
+                const d = FD.dialog({
                 title: __("Hotel Settings"), size: "large",
                 fields: [
                     { fieldtype: "Link", fieldname: "company", label: __("Company"), options: "Company", default: s.company },
@@ -726,216 +730,11 @@ Object.assign(FrontDeskConsole.prototype, {
 
     // ---------------- OTA RESERVATION DETAILS & VOUCHER PRINT ----------------
     dialog_ota_details(name) {
-        const me = this;
-        frappe.db.get_doc("OTA Reservation", name).then((doc) => {
-            const isUuid = (s) => typeof s === "string" && s.trim().length === 36 && s.indexOf("-") !== -1;
-            const roomType = (doc.room_type_name && !isUuid(doc.room_type_name)) ? doc.room_type_name : "Demo Double";
-            const ratePlan = (doc.rate_plan_name && !isUuid(doc.rate_plan_name)) ? doc.rate_plan_name : "Standard Rate";
-
-            const sym = doc.currency === "INR" ? "₹" : (doc.currency === "GBP" ? "£" : (doc.currency === "USD" ? "$" : (doc.currency === "EUR" ? "€" : (doc.currency ? doc.currency + " " : "₹ "))));
-            const formatMoney = (val) => `${sym} ${frappe.format(val || 0, { fieldtype: "Currency" })}`;
-
-            // Channel theme colors & branding
-            const ch = (doc.channel_name || "OTA").toLowerCase();
-            let channelBg = "linear-gradient(135deg, #0284c7, #0369a1)";
-            let channelTag = doc.channel_name || "OTA Channel";
-            if (ch.includes("makemytrip") || ch.includes("mmt")) {
-                channelBg = "linear-gradient(135deg, #e11d48, #be123c)";
-                channelTag = "MakeMyTrip";
-            } else if (ch.includes("booking")) {
-                channelBg = "linear-gradient(135deg, #003580, #00224f)";
-                channelTag = "Booking.com";
-            } else if (ch.includes("airbnb")) {
-                channelBg = "linear-gradient(135deg, #ff385c, #e00b41)";
-                channelTag = "Airbnb";
-            } else if (ch.includes("expedia")) {
-                channelBg = "linear-gradient(135deg, #00355f, #0c2340)";
-                channelTag = "Expedia";
-            } else if (ch.includes("agoda")) {
-                channelBg = "linear-gradient(135deg, #2b3990, #1b2660)";
-                channelTag = "Agoda";
-            } else if (ch.includes("goibibo")) {
-                channelBg = "linear-gradient(135deg, #ec5b24, #c94411)";
-                channelTag = "Goibibo";
-            }
-
-            // Status Badge
-            const isAccepted = doc.status === "Accepted" || !!doc.hotel_reservation;
-            const isCancelled = doc.status === "Cancelled";
-            const statusHtml = isAccepted
-                ? `<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span>✓</span> ${__("Accepted & Confirmed")}</span>`
-                : (isCancelled
-                    ? `<span style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span>✕</span> ${__("Cancelled")}</span>`
-                    : `<span style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span style="display:inline-block;width:8px;height:8px;background:#f59e0b;border-radius:50%;"></span> ${__("Pending Acceptance")}</span>`);
-
-            // Format phone for WhatsApp
-            const cleanPhone = (doc.guest_phone || "").replace(/[^0-9]/g, "");
-
-            const d = new frappe.ui.Dialog({
-                title: `${channelTag} · ${doc.ota_booking_id || doc.name}`,
-                size: "large",
-                fields: [{ fieldtype: "HTML", fieldname: "body" }]
-            });
-
-            const html = `
-                <div class="fd-ota-voucher-modal" style="font-family:inherit;padding:2px 0;">
-                    <!-- Header Banner -->
-                    <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;padding:16px 20px;border-radius:12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                        <div style="display:flex;align-items:center;gap:14px;">
-                            <div style="background:${channelBg};color:#ffffff;font-weight:800;font-size:13px;padding:8px 14px;border-radius:8px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 4px rgba(0,0,0,0.12);">
-                                ${FD.esc(channelTag)}
-                            </div>
-                            <div>
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <span style="font-size:18px;font-weight:800;color:#0f172a;letter-spacing:0.3px;">${FD.esc(doc.ota_booking_id || doc.name)}</span>
-                                    <button type="button" class="btn btn-default btn-xs" style="padding:1px 6px;font-size:11px;" onclick="navigator.clipboard.writeText('${doc.ota_booking_id || doc.name}'); frappe.show_alert({message: __('Booking ID Copied!'), indicator: 'green'});" title="${__("Copy Booking ID")}">📋</button>
-                                </div>
-                                <div style="font-size:12px;color:#64748b;margin-top:2px;">
-                                    ${__("Received via Channel Manager")}: <b>${frappe.datetime.str_to_user(doc.received_at || doc.creation)}</b>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            ${statusHtml}
-                            ${doc.hotel_reservation ? `
-                                <div style="margin-top:6px;font-size:12px;font-weight:700;color:#0284c7;">
-                                    ${__("Hotel Reservation")}: <a href="/app/hotel-reservation/${encodeURIComponent(doc.hotel_reservation)}" target="_blank" style="text-decoration:underline;color:#0284c7;">${FD.esc(doc.hotel_reservation)}</a>
-                                </div>` : ""}
-                        </div>
-                    </div>
-
-                    <!-- 2 Grid Cards: Guest & Stay Details -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-                        <!-- Guest Information -->
-                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding-bottom:10px;margin-bottom:12px;">
-                                <span style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;">👤 ${__("Guest Information")}</span>
-                                <span style="background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${doc.adults || 1} Adult(s)${doc.children ? `, ${doc.children} Child(ren)` : ""}</span>
-                            </div>
-                            <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="color:#64748b;">${__("Primary Guest")}:</span>
-                                    <b style="color:#0f172a;font-size:14px;">${FD.esc(doc.guest_name || "—")}</b>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="color:#64748b;">${__("Mobile Phone")}:</span>
-                                    <div style="display:flex;align-items:center;gap:6px;">
-                                        <b style="color:#0f172a;">${FD.esc(doc.guest_phone || "—")}</b>
-                                        ${cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="btn btn-default btn-xs" style="color:#16a34a;font-weight:700;padding:0 5px;" title="${__("Open WhatsApp Chat")}">WA</a>` : ""}
-                                    </div>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="color:#64748b;">${__("Email Address")}:</span>
-                                    <span style="color:#334155;font-weight:600;max-width:210px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;" title="${FD.esc(doc.guest_email || '')}">${FD.esc(doc.guest_email || "—")}</span>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="color:#64748b;">${__("Total Occupancy")}:</span>
-                                    <b style="color:#0f172a;">${(parseInt(doc.adults, 10) || 1) + (parseInt(doc.children, 10) || 0)} ${__("Guests")} (${doc.adults || 1}A, ${doc.children || 0}C)</b>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Stay Details -->
-                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding-bottom:10px;margin-bottom:12px;">
-                                <span style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;">🏨 ${__("Stay & Room Details")}</span>
-                                <span style="background:#f1f5f9;color:#334155;font-size:11px;font-weight:800;padding:2px 8px;border-radius:10px;">${doc.nights || 1} ${__("Night(s)")}</span>
-                            </div>
-                            <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="color:#64748b;">${__("Check-In")}:</span>
-                                    <b style="color:#0f172a;">${FD.date(doc.check_in_date)} <span style="font-size:11px;font-weight:normal;color:#64748b;">(from 14:00)</span></b>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="color:#64748b;">${__("Check-Out")}:</span>
-                                    <b style="color:#0f172a;">${FD.date(doc.check_out_date)} <span style="font-size:11px;font-weight:normal;color:#64748b;">(by 11:00)</span></b>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="color:#64748b;">${__("Room Category")}:</span>
-                                    <b style="color:#0284c7;font-weight:800;">${FD.esc(roomType)}</b>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="color:#64748b;">${__("Rate / Meal Plan")}:</span>
-                                    <span style="background:#f8fafc;border:1px solid #e2e8f0;padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px;color:#334155;">${FD.esc(ratePlan)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Financial & Payout Summary Card -->
-                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                        <div style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;">
-                            💳 ${__("Financial Settlement & Tariff Breakdown")}
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
-                            <div>
-                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Total Booking Amount")}</div>
-                                <div style="font-size:19px;font-weight:900;color:#0f172a;margin-top:3px;">${formatMoney(doc.total_amount)}</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("OTA Commission")}</div>
-                                <div style="font-size:16px;font-weight:800;color:#dc2626;margin-top:4px;">${formatMoney(doc.commission)}</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Net Hotel Payout")}</div>
-                                <div style="font-size:16px;font-weight:800;color:#16a34a;margin-top:4px;">${formatMoney((doc.total_amount || 0) - (doc.commission || 0))}</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Collection & Status")}</div>
-                                <div style="font-size:13px;font-weight:800;color:#1e293b;margin-top:2px;">${FD.esc(doc.payment_collect || "OTA Collect")}</div>
-                                <div style="font-size:11px;font-weight:700;color:#16a34a;margin-top:2px;">● ${FD.esc(doc.payment_status || "Paid Online")}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    ${doc.remarks ? `
-                    <!-- Special Requests -->
-                    <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400e;margin-bottom:16px;">
-                        <b style="display:inline-block;margin-bottom:4px;">📌 ${__("Guest Special Requests / Notes")}:</b>
-                        <div>${FD.esc(doc.remarks)}</div>
-                    </div>` : ""}
-
-                    <!-- Raw JSON Payload Accordion (Collapsed) -->
-                    <details style="margin-top:8px;font-size:12px;color:#64748b;border-top:1px dashed #e2e8f0;padding-top:10px;">
-                        <summary style="cursor:pointer;font-weight:600;padding:4px 0;user-select:none;">
-                            🔍 ${__("Technical Channel Payload (Channex Raw JSON)")}
-                        </summary>
-                        <pre style="background:#0f172a;color:#f8fafc;padding:12px 14px;border-radius:8px;max-height:160px;overflow:auto;margin-top:8px;font-size:11px;line-height:1.45;">${FD.esc(doc.raw_payload || "{}")}</pre>
-                    </details>
-                </div>
-            `;
-
-            d.fields_dict.body.$wrapper.html(html);
-
-            // Print Voucher Action
-            d.set_secondary_action_label(`🖨️ ${__("Print Booking Voucher")}`);
-            d.set_secondary_action(() => {
-                me.print_ota_voucher(doc, roomType, ratePlan);
-            });
-
-            // Primary Workflow Action
-            if (!isAccepted && !isCancelled) {
-                d.set_primary_action_label(`⚡ ${__("Accept Booking")}`);
-                d.set_primary_action(() => {
-                    d.hide();
-                    FD.call("hospitality_core.api.console.accept_ota_booking", {
-                        ota_reservation_name: doc.name
-                    }, { freeze: true, freeze_message: __("Accepting booking & creating Hotel Reservation...") })
-                        .then((res) => {
-                            frappe.show_alert({ message: __("Accepted! Created Hotel Reservation {0}", [res.reservation]), indicator: "green" });
-                            me.load_data(true);
-                        });
-                });
-            } else if (doc.hotel_reservation) {
-                d.set_primary_action_label(`🛎️ ${__("View Hotel Reservation")}`);
-                d.set_primary_action(() => {
-                    d.hide();
-                    me.dialog_reservation(doc.hotel_reservation);
-                });
-            }
-
-            d.show();
-        });
+        if (window.fd_dialog_ota_details) {
+            window.fd_dialog_ota_details(name);
+        } else {
+            fd_open_doc_popup("OTA Reservation", name);
+        }
     },
 
     // ---------------- PRINTABLE OTA VOUCHER FORMAT ----------------
@@ -1349,4 +1148,267 @@ window.fd_print_ota_voucher = function(doc, roomType, ratePlan) {
     } else {
         FrontDeskConsole.prototype.print_ota_voucher(doc, roomType, ratePlan);
     }
+};
+
+// Global accessor for opening OTA Reservation Details & Voucher Modal
+window.fd_dialog_ota_details = function(name) {
+    if (!name) {
+        frappe.msgprint({ title: __("Notice"), message: __("No reservation specified."), indicator: "orange" });
+        return;
+    }
+
+    frappe.call({
+        method: "frappe.client.get",
+        args: { doctype: "OTA Reservation", name: name },
+        freeze: true,
+        freeze_message: __("Loading Booking Details..."),
+        callback: (r) => {
+            const doc = r.message;
+            if (!doc) {
+                frappe.msgprint({ title: __("Not Found"), message: __("Could not find OTA Reservation: {0}", [name]), indicator: "red" });
+                return;
+            }
+
+            try {
+                const isUuid = (s) => typeof s === "string" && s.trim().length === 36 && s.indexOf("-") !== -1;
+                const roomType = (doc.room_type_name && !isUuid(doc.room_type_name)) ? doc.room_type_name : "Demo Double";
+                const ratePlan = (doc.rate_plan_name && !isUuid(doc.rate_plan_name)) ? doc.rate_plan_name : "Standard Rate";
+
+                const formatMoney = (val) => {
+                    try {
+                        return format_currency(val || 0, doc.currency || frappe.boot.sysdefaults.currency || "INR");
+                    } catch (e) {
+                        const sym = doc.currency === "INR" ? "₹" : (doc.currency === "GBP" ? "£" : (doc.currency === "USD" ? "$" : (doc.currency === "EUR" ? "€" : (doc.currency ? doc.currency + " " : "₹ "))));
+                        return `${sym} ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    }
+                };
+
+                // Channel theme colors & branding
+                const ch = (doc.channel_name || "OTA").toLowerCase();
+                let channelBg = "linear-gradient(135deg, #0284c7, #0369a1)";
+                let channelTag = doc.channel_name || "OTA Channel";
+                if (ch.includes("makemytrip") || ch.includes("mmt")) {
+                    channelBg = "linear-gradient(135deg, #e11d48, #be123c)";
+                    channelTag = "MakeMyTrip";
+                } else if (ch.includes("booking")) {
+                    channelBg = "linear-gradient(135deg, #003580, #00224f)";
+                    channelTag = "Booking.com";
+                } else if (ch.includes("airbnb")) {
+                    channelBg = "linear-gradient(135deg, #ff385c, #e00b41)";
+                    channelTag = "Airbnb";
+                } else if (ch.includes("expedia")) {
+                    channelBg = "linear-gradient(135deg, #00355f, #0c2340)";
+                    channelTag = "Expedia";
+                } else if (ch.includes("agoda")) {
+                    channelBg = "linear-gradient(135deg, #2b3990, #1b2660)";
+                    channelTag = "Agoda";
+                } else if (ch.includes("goibibo")) {
+                    channelBg = "linear-gradient(135deg, #ec5b24, #c94411)";
+                    channelTag = "Goibibo";
+                }
+
+                // Status Badge
+                const isAccepted = doc.status === "Accepted" || !!doc.hotel_reservation;
+                const isCancelled = doc.status === "Cancelled";
+                const statusHtml = isAccepted
+                    ? `<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span>✓</span> ${__("Accepted & Confirmed")}</span>`
+                    : (isCancelled
+                        ? `<span style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span>✕</span> ${__("Cancelled")}</span>`
+                        : `<span style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;"><span style="display:inline-block;width:8px;height:8px;background:#f59e0b;border-radius:50%;"></span> ${__("Pending Acceptance")}</span>`);
+
+                // Format phone for WhatsApp
+                const cleanPhone = (doc.guest_phone || "").replace(/[^0-9]/g, "");
+
+                const html = `
+                    <div class="fd-ota-voucher-modal" style="font-family:inherit;padding:2px 0;">
+                        <!-- Header Banner -->
+                        <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;padding:16px 20px;border-radius:12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div style="background:${channelBg};color:#ffffff;font-weight:800;font-size:13px;padding:8px 14px;border-radius:8px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 4px rgba(0,0,0,0.12);">
+                                    ${FD.esc(channelTag)}
+                                </div>
+                                <div>
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span style="font-size:18px;font-weight:800;color:#0f172a;letter-spacing:0.3px;">${FD.esc(doc.ota_booking_id || doc.name)}</span>
+                                        <button type="button" class="btn btn-default btn-xs" style="padding:1px 6px;font-size:11px;" onclick="navigator.clipboard.writeText('${doc.ota_booking_id || doc.name}'); frappe.show_alert({message: __('Booking ID Copied!'), indicator: 'green'});" title="${__("Copy Booking ID")}">📋</button>
+                                    </div>
+                                    <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                                        ${__("Received via Channel Manager")}: <b>${frappe.datetime.str_to_user(doc.received_at || doc.creation)}</b>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                ${statusHtml}
+                                ${doc.hotel_reservation ? `
+                                    <div style="margin-top:6px;font-size:12px;font-weight:700;color:#0284c7;">
+                                        ${__("Hotel Reservation")}: <a href="/app/hotel-reservation/${encodeURIComponent(doc.hotel_reservation)}" target="_blank" style="text-decoration:underline;color:#0284c7;">${FD.esc(doc.hotel_reservation)}</a>
+                                    </div>` : ""}
+                            </div>
+                        </div>
+
+                        <!-- 2 Grid Cards: Guest & Stay Details -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                            <!-- Guest Information -->
+                            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding-bottom:10px;margin-bottom:12px;">
+                                    <span style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;">👤 ${__("Guest Information")}</span>
+                                    <span style="background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${doc.adults || 1} Adult(s)${doc.children ? `, ${doc.children} Child(ren)` : ""}</span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:#64748b;">${__("Primary Guest")}:</span>
+                                        <b style="color:#0f172a;font-size:14px;">${FD.esc(doc.guest_name || "—")}</b>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:#64748b;">${__("Mobile Phone")}:</span>
+                                        <div style="display:flex;align-items:center;gap:6px;">
+                                            <b style="color:#0f172a;">${FD.esc(doc.guest_phone || "—")}</b>
+                                            ${cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="btn btn-default btn-xs" style="color:#16a34a;font-weight:700;padding:0 5px;" title="${__("Open WhatsApp Chat")}">WA</a>` : ""}
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:#64748b;">${__("Email Address")}:</span>
+                                        <span style="color:#334155;font-weight:600;max-width:210px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;" title="${FD.esc(doc.guest_email || '')}">${FD.esc(doc.guest_email || "—")}</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:#64748b;">${__("Total Occupancy")}:</span>
+                                        <b style="color:#0f172a;">${(parseInt(doc.adults, 10) || 1) + (parseInt(doc.children, 10) || 0)} ${__("Guests")} (${doc.adults || 1}A, ${doc.children || 0}C)</b>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stay Details -->
+                            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding-bottom:10px;margin-bottom:12px;">
+                                    <span style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;">🏨 ${__("Stay & Room Details")}</span>
+                                    <span style="background:#f1f5f9;color:#334155;font-size:11px;font-weight:800;padding:2px 8px;border-radius:10px;">${doc.nights || 1} ${__("Night(s)")}</span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:#64748b;">${__("Check-In")}:</span>
+                                        <b style="color:#0f172a;">${FD.date(doc.check_in_date)} <span style="font-size:11px;font-weight:normal;color:#64748b;">(from 14:00)</span></b>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:#64748b;">${__("Check-Out")}:</span>
+                                        <b style="color:#0f172a;">${FD.date(doc.check_out_date)} <span style="font-size:11px;font-weight:normal;color:#64748b;">(by 11:00)</span></b>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:#64748b;">${__("Room Category")}:</span>
+                                        <b style="color:#0284c7;font-weight:800;">${FD.esc(roomType)}</b>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:#64748b;">${__("Rate / Meal Plan")}:</span>
+                                        <span style="background:#f8fafc;border:1px solid #e2e8f0;padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px;color:#334155;">${FD.esc(ratePlan)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial & Payout Summary Card -->
+                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                            <div style="font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;">
+                                💳 ${__("Financial Settlement & Tariff Breakdown")}
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+                                <div>
+                                    <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Total Booking Amount")}</div>
+                                    <div style="font-size:19px;font-weight:900;color:#0f172a;margin-top:3px;">${formatMoney(doc.total_amount)}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("OTA Commission")}</div>
+                                    <div style="font-size:16px;font-weight:800;color:#dc2626;margin-top:4px;">${formatMoney(doc.commission)}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Net Hotel Payout")}</div>
+                                    <div style="font-size:16px;font-weight:800;color:#16a34a;margin-top:4px;">${formatMoney((doc.total_amount || 0) - (doc.commission || 0))}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.3px;">${__("Collection & Status")}</div>
+                                    <div style="font-size:13px;font-weight:800;color:#1e293b;margin-top:2px;">${FD.esc(doc.payment_collect || "OTA Collect")}</div>
+                                    <div style="font-size:11px;font-weight:700;color:#16a34a;margin-top:2px;">● ${FD.esc(doc.payment_status || "Paid Online")}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${doc.remarks ? `
+                        <!-- Special Requests -->
+                        <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400e;margin-bottom:16px;">
+                            <b style="display:inline-block;margin-bottom:4px;">📌 ${__("Guest Special Requests / Notes")}:</b>
+                            <div>${FD.esc(doc.remarks)}</div>
+                        </div>` : ""}
+
+                        <!-- Raw JSON Payload Accordion (Collapsed) -->
+                        <details style="margin-top:8px;font-size:12px;color:#64748b;border-top:1px dashed #e2e8f0;padding-top:10px;">
+                            <summary style="cursor:pointer;font-weight:600;padding:4px 0;user-select:none;">
+                                🔍 ${__("Technical Channel Payload (Channex Raw JSON)")}
+                            </summary>
+                            <pre style="background:#0f172a;color:#f8fafc;padding:12px 14px;border-radius:8px;max-height:160px;overflow:auto;margin-top:8px;font-size:11px;line-height:1.45;">${FD.esc(doc.raw_payload || "{}")}</pre>
+                        </details>
+                    </div>
+                `;
+
+                const d = new frappe.ui.Dialog({
+                    title: `${channelTag} · ${doc.ota_booking_id || doc.name}`,
+                    size: "large",
+                    fields: [{ fieldtype: "HTML", fieldname: "body", options: html }]
+                });
+
+                d.show();
+                if (d.get_field("body") && d.get_field("body").$wrapper) {
+                    d.get_field("body").$wrapper.html(html);
+                }
+
+                // Print Voucher Action
+                d.set_secondary_action_label(`🖨️ ${__("Print Booking Voucher")}`);
+                d.set_secondary_action(() => {
+                    window.fd_print_ota_voucher(doc, roomType, ratePlan);
+                });
+
+                // Primary Workflow Action
+                if (!isAccepted && !isCancelled) {
+                    d.set_primary_action_label(`⚡ ${__("Accept Booking")}`);
+                    d.set_primary_action(() => {
+                        d.hide();
+                        FD.call("hospitality_core.api.console.accept_ota_booking", {
+                            ota_reservation_name: doc.name
+                        }, { freeze: true, freeze_message: __("Accepting booking & creating Hotel Reservation...") })
+                            .then((res) => {
+                                frappe.show_alert({ message: __("Accepted! Created Hotel Reservation {0}", [res.reservation]), indicator: "green" });
+                                if (window.cur_fd_console && window.cur_fd_console.load_data) {
+                                    window.cur_fd_console.load_data(true);
+                                }
+                            })
+                            .catch((err) => {
+                                frappe.msgprint({ title: __("Accept Failed"), message: err.message || String(err), indicator: "red" });
+                            });
+                    });
+                } else if (doc.hotel_reservation) {
+                    d.set_primary_action_label(`🛎️ ${__("View Hotel Reservation")}`);
+                    d.set_primary_action(() => {
+                        d.hide();
+                        if (window.cur_fd_console && window.cur_fd_console.dialog_reservation) {
+                            window.cur_fd_console.dialog_reservation(doc.hotel_reservation);
+                        } else {
+                            frappe.set_route("Form", "Hotel Reservation", doc.hotel_reservation);
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("[FrontDesk] Voucher error:", err);
+                frappe.msgprint({
+                    title: __("Voucher Display Error"),
+                    message: __("Failed to render voucher: {0}", [err.message || String(err)]),
+                    indicator: "red"
+                });
+            }
+        },
+        error: (err) => {
+            console.error("[FrontDesk] Fetch error:", err);
+            frappe.msgprint({
+                title: __("Server Error"),
+                message: __("Failed to load OTA Reservation from server."),
+                indicator: "red"
+            });
+        }
+    });
 };

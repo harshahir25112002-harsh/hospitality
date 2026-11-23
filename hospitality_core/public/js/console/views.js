@@ -425,7 +425,7 @@ Object.assign(FrontDeskConsole.prototype, {
                                                 <button class="btn btn-default btn-xs fd-btn-wa" data-name="${FD.esc(r.name)}" data-res="${FD.esc(r.hotel_reservation || '')}" title="${__("WhatsApp Guest & Pre-Checkin Link")}">
                                                     <span style="color:#16a34a;font-weight:800;">WA</span>
                                                 </button>
-                                                <button class="btn btn-default btn-xs fd-btn-raw" data-name="${FD.esc(r.name)}" title="${__("View Booking Voucher & Details")}">
+                                                <button class="btn btn-default btn-xs fd-btn-raw" data-name="${FD.esc(r.name)}" title="${__("View Booking Voucher & Details")}" onclick="if(window.fd_dialog_ota_details){ window.fd_dialog_ota_details('${FD.esc(r.name)}'); } else if(window.cur_fd_console && window.cur_fd_console.dialog_ota_details){ window.cur_fd_console.dialog_ota_details('${FD.esc(r.name)}'); } else { fd_open_doc_popup('OTA Reservation', '${FD.esc(r.name)}'); } event.stopPropagation();">
                                                     ${FD.icon("eye")}
                                                 </button>
                                             </td>
@@ -578,11 +578,36 @@ Object.assign(FrontDeskConsole.prototype, {
             }
         });
 
-        // View OTA Reservation Voucher & Details (Eye Button & Row Click)
-        $tab.on("click", ".fd-btn-raw, .fd-ota-row", function (e) {
-            if ($(e.target).closest(".fd-btn-accept, .fd-btn-view-res, .fd-btn-checkin-ota, .fd-btn-wa").length) return;
-            const name = $(this).data("name") || $(this).closest("tr").data("name");
-            if (name) me.dialog_ota_details(name);
+        // Direct click on Eye Button
+        $tab.on("click", ".fd-btn-raw", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const $btn = $(this);
+            const name = $btn.attr("data-name") || $btn.data("name") || $btn.closest("tr").attr("data-name") || $btn.closest("tr").data("name");
+            if (name) {
+                if (window.fd_dialog_ota_details) {
+                    window.fd_dialog_ota_details(name);
+                } else if (me.dialog_ota_details) {
+                    me.dialog_ota_details(name);
+                } else {
+                    fd_open_doc_popup("OTA Reservation", name);
+                }
+            }
+        });
+
+        // Click on entire OTA table row to view details
+        $tab.on("click", ".fd-ota-row", function (e) {
+            if ($(e.target).closest(".fd-btn-accept, .fd-btn-view-res, .fd-btn-checkin-ota, .fd-btn-wa, .fd-btn-raw, a, button").length) return;
+            const name = $(this).attr("data-name") || $(this).data("name");
+            if (name) {
+                if (window.fd_dialog_ota_details) {
+                    window.fd_dialog_ota_details(name);
+                } else if (me.dialog_ota_details) {
+                    me.dialog_ota_details(name);
+                } else {
+                    fd_open_doc_popup("OTA Reservation", name);
+                }
+            }
         });
 
         load();

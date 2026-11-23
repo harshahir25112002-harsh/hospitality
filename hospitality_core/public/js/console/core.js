@@ -101,33 +101,50 @@ function fd_on_console() {
 // Read-only popup preview of any document (replaces navigating to its form)
 function fd_open_doc_popup(doctype, name) {
     frappe.model.with_doctype(doctype, () => {
-        frappe.db.get_doc(doctype, name).then((doc) => {
-            const meta = frappe.get_meta(doctype);
-            const skip = ["Section Break", "Column Break", "Tab Break", "HTML", "Button", "Table", "Table MultiSelect", "Fold", "Heading", "Attach Image", "Text Editor", "Code", "Password"];
-            let rows = "";
-            (meta.fields || []).forEach((df) => {
-                if (skip.includes(df.fieldtype) || df.hidden) return;
-                const v = doc[df.fieldname];
-                if (v === undefined || v === null || v === "" || (v === 0 && df.fieldtype === "Check")) return;
-                rows += `<tr><td class="text-muted" style="width:40%">${FD.esc(__(df.label || df.fieldname))}</td><td>${frappe.format(v, df, { inline: true }, doc)}</td></tr>`;
-            });
-            (meta.fields || []).filter(df => df.fieldtype === "Table" && (doc[df.fieldname] || []).length).forEach((df) => {
-                const cm = frappe.get_meta(df.options);
-                const cols = (cm ? cm.fields : []).filter(f => f.in_list_view).slice(0, 5);
-                if (!cols.length) return;
-                rows += `<tr><td colspan="2"><b>${FD.esc(__(df.label))}</b><table class="table table-sm table-bordered mt-1 mb-0"><thead><tr>${cols.map(c => `<th>${FD.esc(__(c.label))}</th>`).join("")}</tr></thead><tbody>${doc[df.fieldname].map(row => `<tr>${cols.map(c => `<td>${frappe.format(row[c.fieldname], c, { inline: true }, row)}</td>`).join("")}</tr>`).join("")}</tbody></table></td></tr>`;
-            });
-            const d = new frappe.ui.Dialog({
-                title: `${__(doctype)}: ${doc.name}`,
-                size: "large",
-                fields: [{ fieldtype: "HTML", fieldname: "body" }],
-            });
-            d.fields_dict.body.$wrapper.html(`<div style="max-height:65vh;overflow:auto"><table class="table table-sm">${rows || `<tr><td class="text-muted">${__("No details")}</td></tr>`}</table></div>`);
-            if (frappe.model.can_print(doctype)) {
-                d.set_primary_action(__("Print"), () => fd_open_print_popup(doctype, doc.name));
+        frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: doctype, name: name },
+            freeze: true,
+            freeze_message: __("Loading {0}...", [name]),
+            callback: (r) => {
+                const doc = r.message;
+                if (!doc) {
+                    frappe.msgprint({ title: __("Not Found"), message: __("Could not load {0} {1}", [doctype, name]), indicator: "red" });
+                    return;
+                }
+                const meta = frappe.get_meta(doctype);
+                const skip = ["Section Break", "Column Break", "Tab Break", "HTML", "Button", "Table", "Table MultiSelect", "Fold", "Heading", "Attach Image", "Text Editor", "Code", "Password"];
+                let rows = "";
+                (meta.fields || []).forEach((df) => {
+                    if (skip.includes(df.fieldtype) || df.hidden) return;
+                    const v = doc[df.fieldname];
+                    if (v === undefined || v === null || v === "" || (v === 0 && df.fieldtype === "Check")) return;
+                    rows += `<tr><td class="text-muted" style="width:40%">${FD.esc(__(df.label || df.fieldname))}</td><td>${frappe.format(v, df, { inline: true }, doc)}</td></tr>`;
+                });
+                (meta.fields || []).filter(df => df.fieldtype === "Table" && (doc[df.fieldname] || []).length).forEach((df) => {
+                    const cm = frappe.get_meta(df.options);
+                    const cols = (cm ? cm.fields : []).filter(f => f.in_list_view).slice(0, 5);
+                    if (!cols.length) return;
+                    rows += `<tr><td colspan="2"><b>${FD.esc(__(df.label))}</b><table class="table table-sm table-bordered mt-1 mb-0"><thead><tr>${cols.map(c => `<th>${FD.esc(__(c.label))}</th>`).join("")}</tr></thead><tbody>${doc[df.fieldname].map(row => `<tr>${cols.map(c => `<td>${frappe.format(row[c.fieldname], c, { inline: true }, row)}</td>`).join("")}</tr>`).join("")}</tbody></table></td></tr>`;
+                });
+                const bodyHtml = `<div style="max-height:65vh;overflow:auto"><table class="table table-sm">${rows || `<tr><td class="text-muted">${__("No details")}</td></tr>`}</table></div>`;
+                const d = new frappe.ui.Dialog({
+                    title: `${__(doctype)}: ${doc.name}`,
+                    size: "large",
+                    fields: [{ fieldtype: "HTML", fieldname: "body", options: bodyHtml }],
+                });
+                d.show();
+                if (d.get_field("body") && d.get_field("body").$wrapper) {
+                    d.get_field("body").$wrapper.html(bodyHtml);
+                }
+                if (frappe.model.can_print(doctype)) {
+                    d.set_primary_action(__("Print"), () => fd_open_print_popup(doctype, doc.name));
+                }
+                d.$wrapper.addClass("fd-dialog");
+            },
+            error: () => {
+                frappe.msgprint({ title: __("Error"), message: __("Failed to fetch {0} {1}", [doctype, name]), indicator: "red" });
             }
-            d.$wrapper.addClass("fd-dialog");
-            d.show();
         });
     });
 }
