@@ -275,7 +275,7 @@ class FrontDeskConsole {
             ["departures", "", "log-out", k.departures, __("Departures"), "orange"],
             ["in_house", "", "users", k.in_house, __("In-House"), "purple"],
             ["rooms", "Available", "check", k.available, __("Available"), "green"],
-            ["rooms", "Occupied", "bed-double", k.occupied ?? 0, __("Occupied"), "dark"],
+            ["rooms", "Occupied", "bed-double", k.occupied || 0, __("Occupied"), "dark"],
             ["housekeeping", "", "sparkles", k.dirty, __("Dirty"), "yellow"],
             ["maintenance", "", "wrench", k.ooo, __("Out of Order"), "red"],
             ["rooms", "", "percent", `${k.occupancy_pct}%`, __("Occupancy"), "teal"],

@@ -568,8 +568,9 @@ Object.assign(FrontDeskConsole.prototype, {
                     return frappe.call({ method: "frappe.client.set_value", args: { doctype: "Hotel Settings", name: "Hotel Settings", fieldname: v } })
                         .then((r) => { if (!r.exc) me.done(d, __("Settings saved")); });
                 },
-            });
-            d.show();
+                });
+                d.show();
+            }
         });
     },
 
