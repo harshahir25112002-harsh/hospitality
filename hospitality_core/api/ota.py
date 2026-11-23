@@ -459,6 +459,7 @@ def sync_push_inventory(days=30):
 		if not channex_uuid:
 			continue
 
+		from hospitality_core.hospitality_core.doctype.hotel_reservation.hotel_reservation import get_room_rate, get_room_type_availability
 		pushed_types.append(rt_title)
 		for i in range(days):
 			d = add_days(start_d, i)
@@ -466,15 +467,19 @@ def sync_push_inventory(days=30):
 			avail_info = get_room_type_availability(rt.name, d, next_d)
 			free_count = max(cint(avail_info.get("available", 0)), 0)
 			is_stop_sell = (free_count <= 0)
+			daily_rate = get_room_rate(rt.name, d)
 
-			values.append({
+			entry = {
 				"property_id": settings.property_id,
 				"room_type_id": channex_uuid,
 				"date_from": str(d),
 				"date_to": str(d),
 				"availability": free_count,
 				"stop_sell": is_stop_sell
-			})
+			}
+			if daily_rate:
+				entry["rate"] = flt(daily_rate, 2)
+			values.append(entry)
 			total_entries += 1
 
 	if not values:
@@ -528,20 +533,24 @@ def push_room_type_availability_to_ota(room_type, from_date, to_date):
 		end_d = getdate(to_date)
 		num_days = max(date_diff(end_d, start_d), 1)
 
-		from hospitality_core.hospitality_core.doctype.hotel_reservation.hotel_reservation import get_room_type_availability
+		from hospitality_core.hospitality_core.doctype.hotel_reservation.hotel_reservation import get_room_rate, get_room_type_availability
 		values = []
 		for i in range(num_days):
 			d = add_days(start_d, i)
 			avail = get_room_type_availability(room_type, d, add_days(d, 1))
 			free_count = max(cint(avail.get("available", 0)), 0)
-			values.append({
+			daily_rate = get_room_rate(room_type, d)
+			entry = {
 				"property_id": settings.property_id,
 				"room_type_id": channex_uuid,
 				"date_from": str(d),
 				"date_to": str(d),
 				"availability": free_count,
 				"stop_sell": (free_count <= 0)
-			})
+			}
+			if daily_rate:
+				entry["rate"] = flt(daily_rate, 2)
+			values.append(entry)
 
 		if values:
 			headers = get_api_headers()
@@ -573,6 +582,19 @@ def on_reservation_change(doc, method=None):
 		if not doc.room_type or not doc.check_in_date or not doc.check_out_date:
 			return
 		push_room_type_availability_to_ota(doc.room_type, doc.check_in_date, doc.check_out_date)
+	except Exception:
+		pass
+
+
+def on_rate_plan_change(doc, method=None):
+	"""
+	Automatically updates Channex OTA rates whenever a Room Rate Plan
+	(such as a Festival, Peak Season, or Weekend rate) is created or modified.
+	"""
+	try:
+		if not doc.room_type or not doc.valid_from or not doc.valid_to:
+			return
+		push_room_type_availability_to_ota(doc.room_type, doc.valid_from, doc.valid_to)
 	except Exception:
 		pass
 

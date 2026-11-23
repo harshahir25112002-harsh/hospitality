@@ -34,6 +34,10 @@ doc_events = {
         "on_update": "hospitality_core.api.ota.on_reservation_change",
         "on_cancel": "hospitality_core.api.ota.on_reservation_change"
     },
+    "Room Rate Plan": {
+        "on_update": "hospitality_core.api.ota.on_rate_plan_change",
+        "on_trash": "hospitality_core.api.ota.on_rate_plan_change"
+    },
     "Issue": {
         "on_update": "hospitality_core.maintenance.on_issue_update"
     },
