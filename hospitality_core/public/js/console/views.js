@@ -800,4 +800,9 @@ Object.assign(FrontDeskConsole.prototype, {
         $tab.find(".fd-av-go").on("click", run);
         run();
     },
+
+    // ---------------- RESTAURANT POS TAB ----------------
+    render_restaurant_pos($tab) {
+        this.mount_restaurant_pos($tab, false);
+    },
 });
